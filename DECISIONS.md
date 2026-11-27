@@ -4,17 +4,21 @@ Running log for the maintainer. Newest phase at the top. "Spec" means the AI Age
 
 ## Phase 1 (M0–M6)
 
+### Password reset removed (Adam, Nov 26)
+
+Adam chose to drop self-service password reset instead of setting up Gmail. The "Forgot password?" link, the reset screen, the three reset API actions, the email module and the `nodemailer` dependency are gone. The `auth.reset_codes` table stays in the database (unused, harmless) so no migration is needed. A forgotten password is reset by hand (README, "Forgotten passwords"). This deviates from PRD 5.1 and spec 8.3.
+
+
 ### Platform: Vercel + Neon instead of Supabase (requested by Adam)
 
 The spec assumed Supabase for Postgres, auth, and storage. Adam asked for Vercel hosting, his Neon database, and separate image storage. What replaces each Supabase piece:
 
 | Supabase piece | Replacement |
 |---|---|
-| Supabase Auth (email/password, OTP reset) | Our own auth in `server/actions.ts`: scrypt password hashes in `auth.users`, random session tokens (stored hashed) in `auth.sessions`, 6-digit reset codes in `auth.reset_codes`. |
+| Supabase Auth (email/password) | Our own auth in `server/actions.ts`: scrypt password hashes in `auth.users`, random session tokens (stored hashed) in `auth.sessions`. |
 | `auth.uid()` from the JWT | `auth.uid()` reads `app.user_id`, set per transaction by `auth.begin_session(token_hash)`. |
 | `authenticated` / `anon` roles | Created in `000_platform.sql`. The API connects as the owner, then `set local role authenticated` for every signed-in request, so the RLS policies in `001_core.sql` apply unchanged. |
 | supabase-js queries from the browser | One endpoint, `POST /api/rpc {action, params}`. The browser never touches the database. |
-| Supabase email sender + custom SMTP | Gmail SMTP with an app password (Adam's choice), via nodemailer. |
 | Supabase Storage (Phase 2) | Vercel Blob (Adam's choice; no new account). |
 
 Consequences:
@@ -23,12 +27,10 @@ Consequences:
 - Spec 7 "client–database contract" is implemented as RPC actions with the same queries done in SQL on the server. Where the spec asked for a second query to fetch display names or watch names, the server joins them in one query.
 - **Feed (spec 7):** merged in SQL (`union all` of the 30 newest ratings and 30 newest watches, ordered by `created_at`, limit 30) instead of client-side. Same result, one round trip.
 - **Search results:** joined to `watch_stats` so rows show average and count (PRD 5.3), which `search_watches` alone doesn't return.
-- **Sessions:** an httpOnly, Secure, SameSite=Lax cookie with a 400-day max age (the browser maximum), renewed every time the app starts or comes back to the foreground. No inactivity timeout (PRD 5.1). Signing out deletes the session row. A password reset signs out all other sessions.
+- **Sessions:** an httpOnly, Secure, SameSite=Lax cookie with a 400-day max age (the browser maximum), renewed every time the app starts or comes back to the foreground. No inactivity timeout (PRD 5.1). Signing out deletes the session row.
 - **CSRF:** SameSite=Lax plus a required `X-Requested-With: watch-app` header on every API call.
-- **Rate limits (PRD 8):** sign-up 10/hour per IP; sign-in 30 per 15 min per IP and 10 per 15 min per email; reset requests 3 per 15 min per email and 10/hour per IP; 5 wrong codes per reset code. Stored in `auth.rate_limits`.
+- **Rate limits (PRD 8):** sign-up 10/hour per IP; sign-in 30 per 15 min per IP and 10 per 15 min per email. Stored in `auth.rate_limits`.
 - **CAPTCHA:** not implemented (spec 3 marks it optional; PRD 5.1 asks for it). Turnstile can be added later; the rate limits cover a family-sized app. *Change if you want it.*
-- **Reset flow:** step 2 checks the code without using it; step 3 sends email + code + new password, which uses the code and signs the user in. Codes expire after 15 minutes. The step, email, and code are kept in `sessionStorage` so leaving for the Mail app doesn't lose progress.
-- **Reset email privacy:** requesting a reset for an unknown email looks identical to a known one. If Gmail itself fails, the user sees "We couldn't send the email", which only happens for real accounts.
 - **Database driver:** Neon's HTTP driver in production (one round trip per request, as a single transaction). Set `DB_DRIVER=pg` in Vercel to switch to plain TCP if ever needed. Tests use `pg` against a local Postgres 16 with a non-superuser owner role, matching Neon's privileges.
 - **Migrations folder:** `db/migrations/` (spec said `supabase/migrations/`); seed at `db/seed/seed.csv` (spec said `supabase/seed/`).
 - **DB acceptance tests (spec 6.8):** written as Vitest tests that run SQL and API calls against a real Postgres (`npm run test:db`), rather than `.sql` scripts. All nine scenarios plus auth flows pass.
@@ -50,13 +52,11 @@ Consequences:
 ### Dependencies added beyond spec 4
 
 - `@neondatabase/serverless`, `pg`: database drivers (Neon HTTP in production; TCP for migrations, seed, tests).
-- `nodemailer`: Gmail SMTP.
 - `@vercel/node` (dev, types only), `sharp` (dev, icon generation).
 
 ### Not yet verified
 
-- Neon's HTTP transaction running `set local role` in production: tested only against plain Postgres 16. If the API returns errors after deploy, set `DB_DRIVER=pg` and redeploy.
-- Gmail delivery from Vercel.
+- ~~Neon's HTTP transaction running `set local role` in production~~: verified on Neon and on the live Vercel deployment (Nov 26).
 - The iPhone checklist (README) on a real device: Safari behaviour (session cookie persistence in the Home Screen app, Dynamic Type, safe areas) was checked in a desktop Chrome emulating an iPhone, not on an iPhone.
 
 ### Seed data

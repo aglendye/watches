@@ -2,13 +2,10 @@
 // Actions in `publicActions` work signed out; everything else needs a session
 // and runs under row-level security as that user (see db.ts).
 import { asOwner, asUser, q, type Query, type Row } from './db.js';
-import { sendResetCode } from './email.js';
 import { ApiError, badRequest, forbidden, notFound, notSignedIn, tooMany } from './errors.js';
 import {
   DUMMY_HASH,
   hashPassword,
-  hashResetCode,
-  newResetCode,
   newSessionToken,
   sha256,
   verifyPassword,
@@ -26,9 +23,6 @@ export interface Ctx {
 
 type Params = Record<string, unknown>;
 type Action = (p: Params, ctx: Ctx) => Promise<unknown>;
-
-const RESET_MINUTES = 15;
-const RESET_MAX_ATTEMPTS = 5;
 
 // ---------------------------------------------------------------------
 // helpers
@@ -67,29 +61,6 @@ const CATALOG_COLS = `c.watch_id, c.brand_id, c.brand_name, c.model_id, c.model_
   c.avg_score::float8 as avg_score, c.rating_count`;
 
 const RATING_COLS = `r.id, r.user_id, r.watch_id, r.score, r.review_text, r.rated_on::text as rated_on, r.created_at`;
-
-/** Checks a reset code. Returns the user id, or throws a friendly error. */
-async function checkResetCode(email: string, code: string): Promise<string> {
-  if (!/^\d{6}$/.test(code)) throw badRequest('Enter the 6-digit code from the email.');
-  const [[row]] = await asOwner(
-    q(
-      `select c.user_id, c.code_hash, c.attempts, c.expires_at < now() as expired
-         from auth.reset_codes c join auth.users u on u.id = c.user_id
-        where lower(u.email) = lower($1)`,
-      email,
-    ),
-  );
-  const invalid = new ApiError(400, 'bad_code', 'That code is wrong or has expired. Check the email or request a new code.');
-  if (!row || row.expired) throw invalid;
-  if ((row.attempts as number) >= RESET_MAX_ATTEMPTS) {
-    throw new ApiError(400, 'bad_code', 'Too many wrong codes. Request a new code.');
-  }
-  if (hashResetCode(row.user_id as string, code) !== row.code_hash) {
-    await asOwner(q('update auth.reset_codes set attempts = attempts + 1 where user_id = $1', row.user_id));
-    throw invalid;
-  }
-  return row.user_id as string;
-}
 
 // ---------------------------------------------------------------------
 // auth (public)
@@ -150,55 +121,6 @@ export const publicActions: Record<string, Action> = {
   async 'auth.signOut'(_p, ctx) {
     if (ctx.tokenHash) await asOwner(q('delete from auth.sessions where token_hash = $1', ctx.tokenHash));
     ctx.clearSession();
-    return { ok: true };
-  },
-
-  async 'auth.requestReset'(p, ctx) {
-    const email = v.email(p);
-    await limit(`reset-ip:${ctx.ip}`, 10, '1 hour');
-    await limit(`reset:${email.toLowerCase()}`, 3, '15 minutes');
-    const [[row]] = await asOwner(q('select id, email from auth.users where lower(email) = lower($1)', email));
-    // Same response whether or not the account exists.
-    if (!row) return { ok: true };
-    const code = newResetCode();
-    await asOwner(
-      q(
-        `insert into auth.reset_codes (user_id, code_hash, expires_at)
-         values ($1, $2, now() + make_interval(mins => $3))
-         on conflict (user_id) do update
-           set code_hash = excluded.code_hash, expires_at = excluded.expires_at,
-               attempts = 0, created_at = now()`,
-        row.id,
-        hashResetCode(row.id as string, code),
-        RESET_MINUTES,
-      ),
-    );
-    try {
-      await sendResetCode(row.email as string, code);
-    } catch (err) {
-      console.error('sendResetCode failed', err);
-      throw new ApiError(502, 'email_failed', 'We couldn’t send the email. Please try again in a few minutes.');
-    }
-    return { ok: true };
-  },
-
-  async 'auth.verifyReset'(p) {
-    const email = v.email(p);
-    await checkResetCode(email, v.str(p, 'code'));
-    return { ok: true };
-  },
-
-  async 'auth.completeReset'(p, ctx) {
-    const email = v.email(p);
-    const password = v.password(p);
-    const userId = await checkResetCode(email, v.str(p, 'code'));
-    const hash = await hashPassword(password);
-    await asOwner(
-      q('update auth.users set password_hash = $2, updated_at = now() where id = $1', userId, hash),
-      q('delete from auth.reset_codes where user_id = $1', userId),
-      q('delete from auth.sessions where user_id = $1', userId),
-    );
-    await createSession(ctx, userId);
     return { ok: true };
   },
 };

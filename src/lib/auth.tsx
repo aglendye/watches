@@ -8,7 +8,7 @@ type Status = 'loading' | 'signedIn' | 'signedOut' | 'offline';
 interface AuthState {
   status: Status;
   user: Me | null;
-  /** Re-reads the session from the server (after sign in, sign up, reset). */
+  /** Re-reads the session from the server (after sign in or sign up). */
   refresh(): Promise<void>;
   signOut(): Promise<void>;
   setDisplayName(name: string): void;

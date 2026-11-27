@@ -11,7 +11,6 @@ import { Diary } from './screens/Diary';
 import { EditWatch } from './screens/EditWatch';
 import { Home } from './screens/Home';
 import { Me } from './screens/Me';
-import { Reset } from './screens/Reset';
 import { Search, SearchLayout } from './screens/Search';
 import { Watch } from './screens/Watch';
 
@@ -86,7 +85,6 @@ export function AppRoutes() {
       <Routes>
         <Route element={<SignedOutLayout />}>
           <Route path="/auth" element={<Auth />} />
-          <Route path="/auth/reset" element={<Reset />} />
         </Route>
         <Route element={<SignedInLayout />}>
           <Route element={<SearchLayout />}>

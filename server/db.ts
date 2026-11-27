@@ -1,7 +1,7 @@
 // Database access. Every request runs as one short transaction.
 //
 // - asOwner(queries): runs as the connecting owner role. Used only for the
-//   auth tables (sign up, sign in, sessions, reset codes).
+//   auth tables (sign up, sign in, sessions).
 // - asUser(tokenHash, queries): starts the transaction with
 //   auth.begin_session(token) and `set local role authenticated`, so the
 //   queries run under row-level security as the signed-in user.

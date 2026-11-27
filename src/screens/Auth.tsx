@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { InstallBanner } from '../components/Banners';
 import { DialFace } from '../components/Dial';
 import { Button, Field, FormError } from '../components/ui';
@@ -136,13 +135,7 @@ export function Auth() {
         <Button type="submit" busy={busy} className="w-full">
           {mode === 'signIn' ? 'Sign in' : 'Create account'}
         </Button>
-        {mode === 'signIn' ? (
-          <p className="text-center">
-            <Link to="/auth/reset" className="inline-flex min-h-11 items-center font-medium text-accent">
-              Forgot password?
-            </Link>
-          </p>
-        ) : (
+        {mode === 'signUp' && (
           <p className="text-center text-sm text-muted">
             Everything you rate, list, or add is visible to everyone who signs in.
           </p>

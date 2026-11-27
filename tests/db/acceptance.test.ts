@@ -1,6 +1,6 @@
 // Database acceptance tests: the nine scenarios in spec section 6.8,
 // plus auth flows. Runs against a real Postgres (see README, "Tests").
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb } from '../../server/db';
 import { Client, freshDatabase, signUp, sqlAs, sqlOwner } from './harness';
 
@@ -176,31 +176,6 @@ describe('auth flows', () => {
     await sqlOwner(`insert into auth.users (email, password_hash) values ('dave.d@example.com', 'x')`);
     const [p] = await sqlOwner(`select p.display_name from public.profiles p join auth.users u on u.id = p.id where u.email = 'dave.d@example.com'`);
     expect(p.display_name).toBe('dave.d');
-  });
-
-  it('password reset by 6-digit code', async () => {
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    const c = new Client('10.0.2.1');
-    await c.call('auth.requestReset', { email: 'carol@example.com' });
-    const line = log.mock.calls.map((a) => String(a[0])).find((s) => s.includes('reset code'))!;
-    const code = /(\d{6})$/.exec(line)![1];
-    log.mockRestore();
-
-    const wrong = code === '000000' ? '111111' : '000000';
-    await expect(c.call('auth.verifyReset', { email: 'carol@example.com', code: wrong })).rejects.toThrow('wrong or has expired');
-    await c.call('auth.verifyReset', { email: 'carol@example.com', code });
-    await c.call('auth.completeReset', { email: 'carol@example.com', code, password: 'newpassword1' });
-    expect((await c.call('auth.session')).user.displayName).toBe('Carol');
-    // Code is single-use; old password no longer works.
-    await expect(c.call('auth.verifyReset', { email: 'carol@example.com', code })).rejects.toThrow();
-    const d = new Client('10.0.2.2');
-    await expect(d.call('auth.signIn', { email: 'carol@example.com', password: 'password123' })).rejects.toThrow();
-    await d.call('auth.signIn', { email: 'carol@example.com', password: 'newpassword1' });
-  });
-
-  it('reset for an unknown email looks the same as a known one', async () => {
-    const c = new Client('10.0.2.3');
-    expect(await c.call('auth.requestReset', { email: 'nobody@example.com' })).toEqual({ ok: true });
   });
 
   it('rejects requests without the app header (CSRF)', async () => {

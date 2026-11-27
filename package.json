@@ -16,12 +16,12 @@
     "format": "prettier --write .",
     "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "node scripts/seed.mjs",
+    "hash-password": "node scripts/hash-password.mjs",
     "icons": "node scripts/make-icons.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.1",
     "@tanstack/react-query": "^5.108.4",
-    "nodemailer": "^10.6.1",
     "pg": "^8.23.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -34,7 +34,6 @@
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.13",
     "@types/node": "^26.6.11",
-    "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.23.1",
     "@types/react": "^18.3.32",
     "@types/react-dom": "^18.3.7",

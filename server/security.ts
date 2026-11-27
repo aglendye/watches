@@ -1,5 +1,5 @@
-// Password hashing, session tokens and reset codes. Node's crypto only.
-import { createHash, randomBytes, randomInt, scrypt, timingSafeEqual } from 'node:crypto';
+// Password hashing and session tokens. Node's crypto only.
+import { createHash, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 
 const N = 16384;
 const R = 8;
@@ -39,12 +39,4 @@ export function sha256(value: string): string {
 
 export function newSessionToken(): string {
   return randomBytes(32).toString('base64url');
-}
-
-export function newResetCode(): string {
-  return String(randomInt(0, 1_000_000)).padStart(6, '0');
-}
-
-export function hashResetCode(userId: string, code: string): string {
-  return sha256(`${userId}:${code}`);
 }
