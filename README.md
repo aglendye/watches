@@ -1,4 +1,4 @@
-# Watch Ratings
+# Bezel
 
 A Home Screen web app for rating watches with a dial, keeping a dated diary of ratings, and seeing what friends think. Built as a Christmas gift.
 

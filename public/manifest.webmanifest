@@ -1,6 +1,6 @@
 {
-  "name": "Watch Ratings",
-  "short_name": "Watches",
+  "name": "Bezel",
+  "short_name": "Bezel",
   "description": "Rate watches, keep a dated diary, and see what friends think.",
   "start_url": "/",
   "scope": "/",

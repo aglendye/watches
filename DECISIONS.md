@@ -31,6 +31,10 @@ Adam asked for 500 to 1,000 seeded watches from brands like Rolex, Omega, Breitl
 - Nicknames are shown on their own line (accent colour) in search results, Recently added cards and the watch page.
 - The installed app checks for a new version whenever it returns to the foreground and reloads once if the deployed bundle has changed (`src/lib/update.ts`).
 
+### Name: Bezel (Adam, Nov 26)
+
+The app is called Bezel: browser tab, Home Screen label and install name, sign-in wordmark (serif capitals) and README. The repo, Vercel project and URL are unchanged.
+
 ### Rolex colours, serif type, watch-shaped rating dial (Adam, Nov 26)
 
 - **Colours:** Rolex's house palette: Rolex green (#006039, with #127749 for the dark-mode spotlight), gold, and Rolex cream (#f4efea). Dark mode is a very deep green rather than black; the tab bar is solid green with gold for the current tab. No logos, crown or wordmark.
