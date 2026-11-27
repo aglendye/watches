@@ -57,7 +57,17 @@ DATABASE_URL='<DATABASE_URL_UNPOOLED>' npm run db:seed            # loads db/see
 DATABASE_URL='<DATABASE_URL_UNPOOLED>' npm run db:seed -- my.csv  # or any CSV with the same header
 ```
 
-Re-running is safe: watches that already exist are left as they are. To add watches later, append rows to `catalog.csv` (only `brand` and `model` are required) and run it again. `db/seed/research/` has the scripts that generated the catalog (`python3 build.py` rebuilds it).
+### Adding more watches later
+
+1. Put the new watches in their own CSV with the same header as `catalog.csv` (for example `db/seed/batches/2026-12-rolex.csv`). Only `brand` and `model` are required, but fill `case_material`, `dial_color`, `nickname` and `bezel` where known: the drawn picture is built from them.
+2. Dry run, which changes nothing:
+   `DATABASE_URL='<DATABASE_URL_UNPOOLED>' npm run db:seed -- --check db/seed/batches/2026-12-rolex.csv`
+   It lists which rows are new, and flags rows whose drawing would be missing a case material or dial colour.
+3. Load it: `DATABASE_URL='<DATABASE_URL_UNPOOLED>' npm run db:seed -- db/seed/batches/2026-12-rolex.csv`
+
+Watches already in the app are never added twice or changed. Matching ignores case, spaces and punctuation: a row with a reference is skipped if that brand already has that reference under any model name, and a row without a reference is skipped if that brand already has that model. Brands and models are reused when their names match the same way, so "GMT Master II" lands in the existing "GMT-Master II". Every new watch gets its drawn picture automatically; nothing extra needs generating. An uploaded photo replaces the drawing.
+
+`db/seed/research/` has the scripts that generated the starter catalog (`python3 build.py` rebuilds it).
 
 ### 6. Test on a real iPhone
 

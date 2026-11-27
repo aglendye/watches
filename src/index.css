@@ -1,36 +1,47 @@
 @import 'tailwindcss';
 
 /* Design tokens. One accent; light and dark follow the system setting. */
+/* Design tokens, inspired by classic luxury-watch marketing: deep green,
+   champagne gold, cream; light, airy display type. No brand marks.
+   Light and dark follow the system setting. */
 :root {
-  --bg: #f4f3ef;
+  --bg: #f6f3ec;
   --surface: #ffffff;
-  --surface-2: #ecebe6;
-  --text: #16181a;
-  --muted: #5d6268;
-  --accent: #1c5a46;
+  --surface-2: #ede8dd;
+  --text: #1a1a16;
+  --muted: #6a685f;
+  --accent: #0b5a3c;
   --accent-text: #ffffff;
-  --accent-soft: #dcebe4;
+  --accent-soft: #e0ebe3;
+  --gold: #8f6b22;
   --danger: #b3261e;
-  --border: #d9d7d0;
-  --dial-face: #fbfaf7;
-  --dial-ink: #26292c;
+  --border: #e0dacd;
+  --dial-face: #fbf9f4;
+  --dial-ink: #1f2a24;
+  --dial-hand: #0b5a3c;
+  --hero-1: #fbf9f3;
+  --hero-2: #e6e0d2;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0e1011;
-    --surface: #171a1c;
-    --surface-2: #22262a;
-    --text: #ecebe7;
-    --muted: #a3a8ad;
-    --accent: #6fcca6;
-    --accent-text: #08201a;
-    --accent-soft: #183a2f;
+    --bg: #080c0a;
+    --surface: #0f1713;
+    --surface-2: #17221c;
+    --text: #f3efe4;
+    --muted: #a7a99e;
+    --accent: #cfae6a;
+    --accent-text: #15120a;
+    --accent-soft: #2c261a;
+    --gold: #cfae6a;
     --danger: #ff8a80;
-    --border: #2e3338;
-    --dial-face: #1b1f22;
-    --dial-ink: #e6e4df;
+    --border: #233029;
+    --dial-face: #0d3324;
+    --dial-ink: #f3efe4;
+    --dial-hand: #cfae6a;
+    --hero-1: #155238;
+    --hero-2: #070b09;
     color-scheme: dark;
   }
 }
@@ -46,6 +57,7 @@
   --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
   --color-line: var(--border);
+  --color-gold: var(--gold);
   --radius-card: 0.75rem;
   --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
@@ -88,10 +100,21 @@ body {
 /* Small caps-style labels for the spec-sheet look. */
 .label {
   font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--gold);
   font-weight: 600;
+}
+
+/* Large, light headings. */
+.display {
+  font-weight: 300;
+  letter-spacing: -0.015em;
+}
+
+/* Spotlight behind the watch picture. */
+.hero {
+  background: radial-gradient(ellipse at 50% 38%, var(--hero-1) 0%, var(--hero-2) 78%);
 }
 
 .dial-hand {

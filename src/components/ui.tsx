@@ -23,7 +23,7 @@ export function Button({
       {...rest}
       disabled={rest.disabled || busy}
       aria-busy={busy || undefined}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 font-semibold transition-opacity disabled:opacity-45 ${KIND[kind]} ${className}`}
+      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 font-semibold tracking-wide transition-opacity disabled:opacity-45 ${KIND[kind]} ${className}`}
     >
       {children}
     </button>

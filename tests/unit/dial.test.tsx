@@ -85,3 +85,18 @@ describe('DialReadOnly', () => {
     expect(screen.getByRole('img', { name: 'No ratings yet' })).toBeInTheDocument();
   });
 });
+
+describe('Turning the dial', () => {
+  it('maps finger angles to the nearest score, 10 at the top', async () => {
+    const { scoreAt, nearestTurn } = await import('../../src/components/Dial');
+    expect(scoreAt(0)).toBe(10);
+    expect(scoreAt(17)).toBe(10);
+    expect(scoreAt(19)).toBe(1);
+    expect(scoreAt(-36)).toBe(9);
+    expect(scoreAt(180)).toBe(5);
+    expect(scoreAt(359)).toBe(10);
+    // Hand goes the short way: from 9 (324°) to 1 is +72°, not -288°.
+    expect(nearestTurn(324, 36)).toBe(396);
+    expect(nearestTurn(396, 324)).toBe(324);
+  });
+});

@@ -2,7 +2,10 @@
 // plus auth flows. Runs against a real Postgres (see README, "Tests").
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb } from '../../server/db';
-import { Client, freshDatabase, signUp, sqlAs, sqlOwner } from './harness';
+import pg from 'pg';
+import { Client, freshDatabase, signUp, sqlAs, sqlOwner, TEST_URL } from './harness';
+// @ts-expect-error plain JS script
+import { chunkStatements, parseCsv } from '../../scripts/seed.mjs';
 
 let alice: Client;
 let bob: Client;
@@ -256,5 +259,33 @@ describe('nicknames', () => {
   it('three-argument add_watch still works (seed and older callers)', async () => {
     const [row] = await sqlAs(alice, `select public.add_watch('Omega', 'Seamaster 300', null) as id`);
     expect(row.id).toBeTruthy();
+  });
+
+  it('seeding skips watches already in the catalog, however they are spelled', async () => {
+    await alice.call('watches.add', { brand: 'Testwerk', model: 'Sea-Hawk II', reference: 'TW-100.01' });
+    await alice.call('watches.add', { brand: 'Testwerk', model: 'Field 1' });
+    const csv = `brand,model,reference,nickname,case_size_mm,movement_type,case_material,dial_color
+TESTWERK,Sea Hawk II,tw 100 01,,42,automatic,Steel,black
+Testwerk,Field1,,,,,,
+Test-werk,Pilot,TW-200,,40,automatic,Steel,blue
+testwerk,Pilot,TW200,,40,automatic,Steel,blue`;
+    const before = (await sqlOwner('select count(*)::int as n from public.watches'))[0].n;
+    const run = async () => {
+      const c = new pg.Client({ connectionString: TEST_URL });
+      await c.connect();
+      let last: pg.QueryResult | undefined;
+      await c.query('begin');
+      for (const stmt of chunkStatements(parseCsv(csv)) as string[]) last = await c.query(stmt);
+      await c.query('commit');
+      await c.end();
+      return last!.rows[0].added_this_chunk as number;
+    };
+    expect(await run()).toBe(1);
+    expect(await run()).toBe(0);
+    const [after] = await sqlOwner(`select count(*)::int as n,
+      (select count(*)::int from public.models where name ilike 'sea%hawk%') as hawk_models,
+      (select count(*)::int from public.brands where name ilike 'test%werk') as brands
+      from public.watches`);
+    expect(after).toEqual({ n: before + 1, hawk_models: 1, brands: 1 });
   });
 });

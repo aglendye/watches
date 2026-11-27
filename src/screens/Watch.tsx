@@ -69,7 +69,7 @@ export function Watch() {
           ‹ Home
         </Link>
         {/* The uploaded photo when there is one (Phase 2), otherwise a drawing from the watch's data */}
-        <div className="grid aspect-[16/9] place-items-center overflow-hidden rounded-card border border-line bg-surface-2">
+        <div className="grid aspect-[16/9] place-items-center overflow-hidden hero rounded-card border border-line">
           {w.primary_image_url ? (
             <WatchImage watch={w} photoUrl={w.primary_image_url} className="h-full w-full" />
           ) : (
@@ -78,10 +78,10 @@ export function Watch() {
         </div>
         <div>
           <p className="label">{w.brand_name}</p>
-          <h1 className="text-2xl leading-tight font-bold">{w.model_name}</h1>
+          <h1 className="display text-3xl leading-tight">{w.model_name}</h1>
           <p className={`mt-1 ${t.hasReference ? 'tabular' : 'text-muted italic'}`}>{t.subtitle}</p>
           {typeof w.extras?.nickname === 'string' && w.extras.nickname && (
-            <p className="mt-1 text-lg font-medium text-accent">“{w.extras.nickname}”</p>
+            <p className="mt-1 text-lg font-medium text-gold">“{w.extras.nickname}”</p>
           )}
         </div>
       </header>

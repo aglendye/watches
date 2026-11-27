@@ -31,6 +31,12 @@ Adam asked for 500 to 1,000 seeded watches from brands like Rolex, Omega, Breitl
 - Nicknames are shown on their own line (accent colour) in search results, Recently added cards and the watch page.
 - The installed app checks for a new version whenever it returns to the foreground and reloads once if the deployed bundle has changed (`src/lib/update.ts`).
 
+### Look and feel, turning dial, seeding rules (Adam, Nov 26)
+
+- **Theme:** styled after classic luxury-watch marketing without using any brand's marks: deep green, champagne gold and cream; light, large headings; gold small-caps labels; pill buttons; a green spotlight behind watch pictures in dark mode (cream in light mode). Dark mode keeps the near-black base. App icons regenerated in the same colours.
+- **Turning the dial:** drag a finger around the rating dial and the hand follows, stepping through the numbers (with a light vibration where the phone supports it); a knurled bezel ring turns with it. On release the hand settles on the nearest number. Tapping markers, arrow keys and the number row still work. The dial area doesn't scroll the sheet (`touch-action: none`).
+- **Seeding never duplicates:** `npm run db:seed` skips any row already in the catalog, comparing brand, model and reference without case, spaces or punctuation; `--check` is a dry run that lists what's new and which rows lack drawing data. Covered by a DB test.
+
 ### Bracelet and bezel
 
 Kept in `extras` (free text such as "Jubilee or Oyster", "Bidirectional 24h, blue/black Cerachrom") rather than as core columns: Rolex sells many references on more than one bracelet, and the app has no filtering yet. If filtering is added, promote `bracelet` and `bezel` to core columns with fixed choices.

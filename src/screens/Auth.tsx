@@ -76,7 +76,7 @@ export function Auth() {
           <DialFace hand={8} centerText="" showNumbers={false} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Watch Ratings</h1>
+          <h1 className="display text-3xl">Watch Ratings</h1>
           <p className="text-muted">Rate watches. Keep a diary. Compare notes.</p>
         </div>
       </header>

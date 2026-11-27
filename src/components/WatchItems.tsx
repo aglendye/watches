@@ -17,7 +17,7 @@ export function WatchRow({ w }: { w: SearchResult }) {
       />
       <div className="min-w-0 flex-1">
         <p className="line-clamp-2 leading-snug font-semibold">{t.title}</p>
-        {w.nickname && <p className="text-sm leading-snug font-medium text-accent">“{w.nickname}”</p>}
+        {w.nickname && <p className="text-sm leading-snug font-medium text-gold">“{w.nickname}”</p>}
         <p className={`truncate text-sm ${t.hasReference ? 'tabular text-muted' : 'text-muted italic'}`}>
           {t.hasReference ? t.subtitle : 'reference not specified'}
         </p>
@@ -36,13 +36,15 @@ export function WatchCard({ w }: { w: CatalogWatch }) {
   return (
     <Link
       to={`/watch/${w.watch_id}`}
-      className="flex w-40 shrink-0 snap-start flex-col gap-2 rounded-card border border-line bg-surface p-3"
+      className="flex w-40 shrink-0 snap-start flex-col gap-2 overflow-hidden rounded-card border border-line bg-surface p-3"
     >
-      <WatchImage watch={w} photoUrl={w.primary_image_url} className="mx-auto size-24 rounded-lg" />
+      <div className="hero -mx-3 -mt-3 grid place-items-center rounded-t-card py-2">
+        <WatchImage watch={w} photoUrl={w.primary_image_url} className="size-24 rounded-lg" />
+      </div>
       <div className="min-w-0">
         <p className="label truncate !text-[0.7rem]">{w.brand_name}</p>
         <p className="line-clamp-2 leading-snug font-semibold">{w.model_name}</p>
-        {nickname && <p className="truncate text-sm font-medium text-accent">“{nickname}”</p>}
+        {nickname && <p className="truncate text-sm font-medium text-gold">“{nickname}”</p>}
         <p className="mt-0.5 truncate text-sm text-muted">
           {w.avg_score === null ? 'Not rated yet' : `${w.avg_score.toFixed(1)} avg`}
         </p>

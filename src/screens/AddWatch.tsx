@@ -89,7 +89,7 @@ export function AddWatch() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-bold">Add a watch</h1>
+        <h1 className="display text-3xl">Add a watch</h1>
         <p className="mt-1 text-muted">
           Tip: <Link to="/search" className="font-medium text-accent">search</Link> first. If it’s already here,
           just rate it.

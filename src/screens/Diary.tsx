@@ -14,7 +14,7 @@ export function Diary() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">My Diary</h1>
+      <h1 className="display text-3xl">My Diary</h1>
       {diary.isPending ? (
         <SkeletonRows rows={6} />
       ) : diary.isError ? (

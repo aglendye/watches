@@ -115,7 +115,7 @@ function EditForm({ w }: { w: WatchDetail }) {
       <Link to={`/watch/${w.watch_id}`} className="inline-flex min-h-11 items-center font-medium text-accent">
         ‹ Back
       </Link>
-      <h1 className="text-2xl font-bold">Edit details</h1>
+      <h1 className="display text-3xl">Edit details</h1>
       <form onSubmit={save} noValidate className="space-y-6">
         <fieldset className="space-y-3">
           <legend className="label mb-2">Identity</legend>
