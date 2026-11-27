@@ -6,7 +6,7 @@ A Home Screen web app for rating watches with a dial, keeping a dated diary of r
 - **API:** one Vercel serverless function, `api/rpc.ts`, with every action in `server/actions.ts`.
 - **Database:** Neon Postgres. Row-level security does the permission work: every signed-in request runs as the `authenticated` role with the user's id set (see `db/migrations/000_platform.sql`).
 - **Login:** email and password (hashed with scrypt) and a long-lived httpOnly session cookie. There is no self-service password reset; see "Forgotten passwords" below.
-- **Photos (Phase 2):** Vercel Blob.
+- **Photos:** a private Vercel Blob store. The phone shrinks each photo before upload; the app serves photos only to signed-in users (`api/photo.ts`, `api/photo-upload.ts`).
 
 `DECISIONS.md` lists every choice and deviation from the spec.
 
@@ -75,6 +75,23 @@ Go through the checklist at the end of this file.
 
 ---
 
+### 7. Photo storage (done Nov 27, 2026)
+
+The private Blob store `bezel-photos` is connected to the Vercel project, which gives the app `BLOB_READ_WRITE_TOKEN`. To set it up again from scratch: Vercel → the project → Storage → Create → Blob → access **Private** → connect to all environments. Redeploy afterwards so the functions see the new variable.
+
+Free Hobby allowance per month: 1 GB stored, 10,000 reads, 2,000 uploads, 10 GB transfer. Going over blocks the store until the next month (no charge). Usage: Vercel → the project → Storage → bezel-photos.
+
+For local development, photos go to `./.local-blobs` unless you put a `BLOB_READ_WRITE_TOKEN` in `.env.local` (never commit it).
+
+---
+
+## Using the app (Phase 2)
+
+- **I own this** (watch page): adds the watch to your collection, with optional acquired and sold dates and notes. Owning two is two entries. Everyone sees who owns a watch; it isn't in the feed.
+- **My Collection** (Me → My Collection): current and past watches. Tap one to edit, mark sold or remove it.
+- **Lists** (Me → Lists, or "Add to list" on a watch): make named lists, add watches with notes. Everyone can see every list; only its owner can change it. New lists show in the feed.
+- **Add photo** (watch page): take a photo or pick one. The oldest photo becomes the watch's picture everywhere except the rating dial, which is always the drawing. You can delete your own photos (an admin can delete any).
+
 ## Forgotten passwords
 
 There is no "Forgot password" in the app. If someone forgets theirs, set a temporary one for them and tell them to use it (they can't change it in the app yet, so pick something they'll remember). On your computer, in this folder:
@@ -132,10 +149,13 @@ create role neondb_owner login createrole password 'pw';
 
 ```
 api/rpc.ts              Vercel function: POST /api/rpc
+api/photo.ts            GET /api/photo?id=… (signed-in users only)
+api/photo-upload.ts     POST /api/photo-upload?watchId=… (JPEG body)
 server/                 actions, database access, auth, validation
 shared/types.ts         types shared by API and app
 src/                    the app (screens, components, lib)
-db/migrations/          000_platform.sql (auth, roles), 001_core.sql (the original schema.sql)
+db/migrations/          000_platform.sql (auth, roles), 001_core.sql (the original schema.sql),
+                        004 ownerships, 005 lists, 006 watch_images
 db/seed/catalog.csv     starter catalog (~770 watches) and research/ scripts that built it
 scripts/                migrate, seed, make-icons
 tests/unit, tests/db    tests
@@ -156,3 +176,8 @@ Run on a real iPhone using the installed Home Screen app. Record results here.
 | 7 | Rotate the phone, increase text size, enable Reduce Motion: layouts hold, the dial hand doesn't animate. | |
 | 8 | Airplane mode: the offline banner shows, nothing crashes. | |
 | 9 | With a second account: can edit specs but not the reference of someone else's watch, and can't delete it. | |
+| 10 | Watch page → I own this → save with a date. It's in Me → My Collection and under Owners. Mark it sold: it moves to Past. | |
+| 11 | Add to list → New list "Grails": the watch is on it, the feed shows the new list. Untick it: it's removed. Add a note from the list page. | |
+| 12 | Add photo → Take Photo (camera): preview shows ~1600 px and a few hundred KB; upload shows progress; the photo replaces the drawing at the top and in search. The rating dial still shows the drawing. | |
+| 13 | Add photo → Photo Library with a normal iPhone (HEIC) photo: uploads fine. A second account sees it; signed out, the photo URL doesn't load. | |
+| 14 | Delete your photo: the next oldest becomes the main one; with none left the drawing is back. Another person's photo has no Delete (unless you're admin). | |

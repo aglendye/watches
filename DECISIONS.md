@@ -2,6 +2,48 @@
 
 Running log for the maintainer. Newest phase at the top. "Spec" means the AI Agent Build Specification; "PRD" means the Product Requirements Document.
 
+## Phase 2 (M7–M9), Nov 27
+
+Built from the Phase 2 plan (`docs/PHASE2.md`). Adam confirmed the four open decisions at the start: private photo store, owners shown on the watch page (current and past), everyone's lists on the Lists screen (his first), and creating the Blob store.
+
+### M7: Ownership
+
+- Migration `004_ownerships.sql`: `ownerships` as planned (dates optional, sold not before acquired, notes ≤ 1,000). Everyone signed in reads; people write only their own rows.
+- **Watch page:** a ruled row of secondary actions under the score (`I own this`, `Add to list`, `Add photo`); Rate stays the pinned button. The ownership sheet has Acquired, Sold and Notes; each save is one row, so owning two is two rows. An **Owners** section lists current owners first ("You" first among them), then past owners dimmed with a "Sold" tag. Your own rows open the sheet to edit.
+- **My Collection** (`#/collection`, linked from Me): Current and Past groups. Tapping a row edits it (with "Mark as sold today" and Remove); the chevron opens the watch.
+- Future dates are refused for acquired and sold (same rule as ratings).
+- Ownership is not in the feed (PRD).
+- **Deviation, delete guard:** the plan's guard covers ratings, lists and photos. It now also covers **other people's ownerships**, because deleting a watch would silently wipe their collection records through the cascade. The rule lives in one function, `public.watch_used_by_others(watch_id)`, used by both the trigger and `can_delete`. The error message is now "Other people have rated, owned, listed or photographed this watch, so it can't be deleted".
+
+### M8: Lists
+
+- Migration `005_lists.sql`: `lists` and `list_items` as planned. List-item policies use `public.owns_list(list_id)` (security definer). A trigger keeps a list's owner and created time fixed and stamps `updated_at`.
+- **Lists** (`#/lists`, linked from Me): "Your lists" then "Everyone else's", newest first, each with its newest watch's picture and a count. **List detail** (`#/lists/:id`): items newest first with notes; the owner gets Edit (name, description), Add/Edit note, Remove (with confirmation) and Delete list.
+- **Add to list** on the watch page: my lists as checkboxes (tap adds or removes immediately), plus a "New list" field that creates the list with the watch in it.
+- Adding a watch already on the list is a no-op, not an error.
+- **Feed:** "Dad created the list Grails", linking to the list.
+
+### M9: Photos
+
+- **Storage: private Vercel Blob store** `bezel-photos` (`store_rF7ahgURXk92kLza`, iad1, next to the Neon database), connected to the project, which added `BLOB_READ_WRITE_TOKEN`. Private stores became generally available in June 2026, so the spec's "readable by signed-in users only" is met without the public-URL fallback.
+- **Hobby limits (checked Nov 27, 2026):** 1 GB storage, 10,000 reads ("simple operations"), 2,000 writes ("advanced operations") and 10 GB transfer a month. Going over blocks the store until the next month; it does not bill. With photos at about 200–400 KB, 1 GB is roughly 3,000 photos.
+- **Serving:** `GET /api/photo?id=…` (`api/photo.ts`) checks the session cookie, looks the photo up under row-level security, and streams it from the store. Photos never change (a new photo gets a new id), so responses are `Cache-Control: private, max-age=31536000, immutable`: each phone downloads each photo once. The store's own CDN cache sits in front of reads, and cache hits don't count against the 10,000. `primary_image_url` is this URL, so `<img>` tags just work (same-origin cookie).
+- **Uploading:** the phone shrinks the photo with a canvas (long edge 1,600 px, JPEG 0.8), which also converts HEIC to JPEG and strips location data, shows a preview with its size, then uploads the bytes to `POST /api/photo-upload?watchId=…` with a progress bar. The server checks the session, the app header (CSRF), JPEG type and magic bytes, size, and that the watch exists, writes `watch-images/{watch_id}/{image_id}.jpg`, then inserts the row (deleting the file if the insert fails).
+  - **Deviation:** the size limit is **4 MB**, not 5 MB: Vercel functions accept at most 4.5 MB per request. Shrunk photos are far smaller.
+  - Uploads are limited to 30 an hour per person, to protect the free write quota.
+- Migration `006_watch_images.sql`: `watch_images` (no updates; delete by the uploader or an admin), `public.primary_image_url(watch_id)` (oldest photo), and `primary_image_url` appended to `watch_catalog`. It's also returned by search, Recently added, the feed, the diary, My Collection and lists, so `WatchImage` shows photos everywhere. **The rating dial is still always the drawing.**
+- Deleting a photo deletes its file after the row is gone. Deleting a watch deletes its photos' files too. (If a file delete fails, the file is orphaned, never the row.)
+- **Watch page:** the hero shows the primary photo (otherwise the drawing). A "Photos" strip lists every photo with who added it and when; tapping one shows it in the hero; your own (or any, for an admin) have Delete with confirmation. Deleting the main photo promotes the next oldest.
+- **Feed:** "Adam added a photo of the Batman" with the photo as the thumbnail.
+- **Local development** without Blob credentials stores photos in `./.local-blobs` (git-ignored). Tests use an in-memory store.
+- **Not yet verified:** an upload on the live site and on a real iPhone (camera, library, HEIC). The whole flow was tested locally in an emulated iPhone browser, and the live deployment is up with no runtime errors, but this workspace can't sign in to the live site.
+
+### Cross-cutting
+
+- Me now starts with links to My Collection and Lists; the Me tab stays highlighted on those screens.
+- Shared helpers: `BackLink`, `NavRow` (ui), `WatchName` (watch name with the orange nickname, for sheet titles).
+- Tests: `tests/db/phase2.test.ts` (permissions, the date check, a watch once per list, feed items, the extended delete guard, upload checks, who can delete photos, primary promotion, file cleanup), `tests/unit/phase2.test.tsx` (ownership sheet validation, add-to-list sheet), `tests/unit/photo.test.ts` (resize maths).
+
 ## Phase 1 (M0–M6)
 
 ### Seed catalog (Adam, Nov 26)

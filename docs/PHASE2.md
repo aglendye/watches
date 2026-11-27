@@ -1,5 +1,7 @@
 # Bezel: Phase 2 plan
 
+> **Status (Nov 27, 2026): built and deployed.** M7, M8 and M9 are live; migrations 004–006 are applied to Neon; the private Blob store `bezel-photos` exists. What was decided along the way is in `DECISIONS.md` (Phase 2). Still open: the real-iPhone checklist (README, rows 1–14).
+
 Written Nov 27, 2026, at the end of Phase 1. This is the hand-off for a new chat: read it, then `DECISIONS.md`, then start at "Build order". The product intent is in the project docs `watch-app-prd.md` (sections 5.7–5.9, 5.11, 7) and `watch-app-ai-agent-spec.md` (sections 6.7, 8.6b, milestones M7–M9). Where this plan differs from them, this plan wins: it reflects decisions made since (Neon + Vercel instead of Supabase, the Tool Watch design, and so on).
 
 ## Where things are
