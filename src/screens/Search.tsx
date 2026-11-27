@@ -84,7 +84,16 @@ export function Search() {
   );
 
   if (!trimmed) {
-    return <EmptyState title="Type a brand, model, or reference number." />;
+    return (
+      <EmptyState
+        title="Type a brand, model, nickname or reference number."
+        action={
+          <Link to="/browse" className="font-semibold text-accent">
+            Or browse by brand ›
+          </Link>
+        }
+      />
+    );
   }
 
   return (

@@ -11,7 +11,7 @@ const TABS = [
   { to: '/', label: 'Home', icon: 'home', end: true },
   { to: '/add', label: 'Add', icon: 'add', end: false },
   { to: '/diary', label: 'My Diary', icon: 'diary', end: false },
-  { to: '/me', label: 'Me', icon: 'me', end: false, also: ['/collection', '/lists'] },
+  { to: '/me', label: 'Me', icon: 'me', end: false, also: ['/collection', '/lists', '/people'] },
 ];
 
 export function TabBar() {

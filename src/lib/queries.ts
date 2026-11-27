@@ -7,10 +7,15 @@ import {
   keepPreviousData,
 } from '@tanstack/react-query';
 import type {
+  BrandDetail,
+  BrandSummary,
   CollectionItem,
+  ModelDetail,
   ListDetail,
   ListSummary,
   MyListForWatch,
+  PersonDetail,
+  PersonSummary,
   CommunityRating,
   OwnershipInput,
   WatchOwner,
@@ -228,4 +233,32 @@ export const useDeletePhoto = () => useWrite((id: string) => call<{ ok: true }>(
 export function useAfterUpload() {
   const qc = useQueryClient();
   return () => qc.invalidateQueries();
+}
+
+// ---------------------------------------------------------------------
+// People
+// ---------------------------------------------------------------------
+export function usePeople() {
+  return useQuery({ queryKey: ['people'], queryFn: () => call<PersonSummary[]>('people.index'), staleTime: LIST_STALE });
+}
+
+export function usePerson(id: string) {
+  return useQuery({ queryKey: ['person-page', id], queryFn: () => call<PersonDetail>('people.get', { id }), staleTime: LIST_STALE });
+}
+
+// ---------------------------------------------------------------------
+// Browse the catalog
+// ---------------------------------------------------------------------
+const CATALOG_STALE = 5 * 60_000;
+
+export function useBrands() {
+  return useQuery({ queryKey: ['brands-all'], queryFn: () => call<BrandSummary[]>('catalog.brands'), staleTime: CATALOG_STALE });
+}
+
+export function useBrand(id: string) {
+  return useQuery({ queryKey: ['brand', id], queryFn: () => call<BrandDetail>('catalog.brand', { id }), staleTime: CATALOG_STALE });
+}
+
+export function useModel(id: string) {
+  return useQuery({ queryKey: ['model', id], queryFn: () => call<ModelDetail>('catalog.model', { id }), staleTime: CATALOG_STALE });
 }

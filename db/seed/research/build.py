@@ -13,6 +13,18 @@ for line in legacy.splitlines():
     if not ref and any(bb == b.lower() and mm.startswith(m.lower()) for bb, mm in seen_models): continue
     row = {k: '' for k in FIELDS}; row.update(brand=b, model=m, reference=ref); ROWS.append(row)
     seen_models.add((b.lower(), m.lower()))
+# One nickname per watch (see nickname_fixes.py)
+from nickname_fixes import FIXES
+from common import nickname_problem
+fix_by = {(b.lower(), ref.lower()): (n, a, note, d) for b, ref, n, a, note, d in FIXES}
+for r in ROWS:
+    f = fix_by.get((r['brand'].lower(), r['reference'].lower()))
+    if f:
+        n, a, note, d = f
+        r['nickname'] = n or ''
+        r['aka'] = a or r.get('aka', '')
+        r['note'] = note or r.get('note', '')
+        if d and not r['dial_color']: r['dial_color'] = d
 # Validate
 errs = []; keys = set()
 for r in ROWS:
@@ -24,6 +36,7 @@ for r in ROWS:
     if r['water_resistance_m'] != '' and int(r['water_resistance_m']) < 0: errs.append(f'wr {k}')
     if r['movement_type'] not in ('', 'automatic', 'manual', 'quartz', 'other'): errs.append(f'movement {k}')
     if ',' in r['reference']: errs.append(f'comma in ref {k}')
+    if nickname_problem(r['nickname']): errs.append(f'nickname {k}: {r["nickname"]!r} ({nickname_problem(r["nickname"])})')
 # same brand+reference under two models?
 from collections import Counter
 c = Counter((r['brand'], r['reference']) for r in ROWS if r['reference'])

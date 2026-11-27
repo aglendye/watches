@@ -1,5 +1,5 @@
 // Small shared building blocks: buttons, fields, states, badges.
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
 
 type ButtonKind = 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -143,11 +143,25 @@ export function Wordmark({ size = 'text-[2rem]' }: { size?: string }) {
   );
 }
 
-/** "‹ Back" link at the top of a screen. */
+/**
+ * "‹ Back" at the top of a screen. Goes back to wherever you came from (a
+ * list, your collection, search results…); when the screen was opened
+ * directly, it goes to `to` and says where.
+ */
 export function BackLink({ to, children }: { to: string; children: ReactNode }) {
+  const navigate = useNavigate();
+  const canGoBack = typeof window !== 'undefined' && (window.history.state?.idx ?? 0) > 0;
   return (
-    <Link to={to} className="inline-flex min-h-11 items-center font-semibold text-accent">
-      ‹ {children}
+    <Link
+      to={to}
+      onClick={(e) => {
+        if (!canGoBack) return;
+        e.preventDefault();
+        navigate(-1);
+      }}
+      className="inline-flex min-h-11 items-center font-semibold text-accent"
+    >
+      ‹ {canGoBack ? 'Back' : children}
     </Link>
   );
 }

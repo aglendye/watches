@@ -6,6 +6,7 @@ import { Button } from './components/ui';
 import { DialFace } from './components/Dial';
 import { useAuth } from './lib/auth';
 import { AddWatch } from './screens/AddWatch';
+import { BrandPage, Brands, ModelPage } from './screens/Browse';
 import { Collection } from './screens/Collection';
 import { Auth } from './screens/Auth';
 import { Diary } from './screens/Diary';
@@ -13,6 +14,7 @@ import { EditWatch } from './screens/EditWatch';
 import { Home } from './screens/Home';
 import { ListDetailScreen, Lists } from './screens/Lists';
 import { Me } from './screens/Me';
+import { People, PersonPage } from './screens/People';
 import { Search, SearchLayout } from './screens/Search';
 import { Watch } from './screens/Watch';
 
@@ -94,12 +96,17 @@ export function AppRoutes() {
             <Route path="/search" element={<Search />} />
           </Route>
           <Route path="/add" element={<AddWatch />} />
+          <Route path="/browse" element={<Brands />} />
+          <Route path="/browse/:brandId" element={<BrandPage />} />
+          <Route path="/browse/:brandId/:modelId" element={<ModelPage />} />
           <Route path="/watch/:id" element={<Watch />} />
           <Route path="/watch/:id/edit" element={<EditWatch />} />
           <Route path="/diary" element={<Diary />} />
           <Route path="/me" element={<Me />} />
           <Route path="/collection" element={<Collection />} />
           <Route path="/lists" element={<Lists />} />
+          <Route path="/people" element={<People />} />
+          <Route path="/people/:id" element={<PersonPage />} />
           <Route path="/lists/:id" element={<ListDetailScreen />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

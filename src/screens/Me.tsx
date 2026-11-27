@@ -47,6 +47,8 @@ export function Me() {
       <nav aria-label="Your things" className="border-t border-line">
         <NavRow to="/collection" label="My Collection" />
         <NavRow to="/lists" label="Lists" />
+        <NavRow to="/people" label="People" />
+        <NavRow to={`/people/${me.id}`} label="Your page" />
       </nav>
       <Card className="p-4">
         <form onSubmit={save} noValidate className="space-y-3">

@@ -60,6 +60,8 @@ DATABASE_URL='<DATABASE_URL_UNPOOLED>' npm run db:seed -- my.csv  # or any CSV w
 ### Adding more watches later
 
 1. Put the new watches in their own CSV with the same header as `catalog.csv` (for example `db/seed/batches/2026-12-rolex.csv`). Only `brand` and `model` are required, but fill `case_material`, `dial_color`, `nickname` and `bezel` where known: the drawn picture is built from them.
+   - `nickname` is **one** short name ("Batman"). Other names go in `aka` ("Batgirl"; searchable) and descriptions in `note`. The seed tool refuses a file with a nickname containing `;`, `/` or brackets, or over 24 characters.
+   - Seeded watches never appear in the activity feed or "Recently added"; they're found by search and Browse.
 2. Dry run, which changes nothing:
    `DATABASE_URL='<DATABASE_URL_UNPOOLED>' npm run db:seed -- --check db/seed/batches/2026-12-rolex.csv`
    It lists which rows are new, and flags rows whose drawing would be missing a case material or dial colour.
@@ -90,6 +92,8 @@ For local development, photos go to `./.local-blobs` unless you put a `BLOB_READ
 - **I own this** (watch page): adds the watch to your collection, with optional acquired and sold dates and notes. Owning two is two entries. Everyone sees who owns a watch; it isn't in the feed.
 - **My Collection** (Me → My Collection): current and past watches. Tap one to edit, mark sold or remove it.
 - **Lists** (Me → Lists, or "Add to list" on a watch): make named lists, add watches with notes. Everyone can see every list; only its owner can change it. New lists show in the feed.
+- **People** (Me → People): everyone's page, with their ratings (best first), collection and lists.
+- **Browse** (Home → Browse by brand): brands → models → references, with a filter on long lists.
 - **Add photo** (watch page): take a photo or pick one. The oldest photo becomes the watch's picture everywhere except the rating dial, which is always the drawing. You can delete your own photos (an admin can delete any).
 
 ## Forgotten passwords

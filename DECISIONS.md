@@ -2,6 +2,39 @@
 
 Running log for the maintainer. Newest phase at the top. "Spec" means the AI Agent Build Specification; "PRD" means the Product Requirements Document.
 
+## After Phase 2: review fixes (Adam, Nov 27)
+
+From a whole-app review. Adam chose the order: seed activity, nicknames, person pages, back links, browsing. A big Rolex scrape is coming, so each fix had to keep working as the catalog grows.
+
+### Seeded watches aren't activity
+
+- Migration `007_catalog_cleanup.sql` adds `profiles.is_system` (true for the "Seed catalog" account; people can't set it). The feed and "Recently added" skip watches added by system accounts, so Dad's first screen isn't 30 "Seed catalog added…" rows. This keys off the account, not a date, so **every future seeding batch stays out of the feed too**; `scripts/seed.mjs` also marks the account on each load.
+- Home hides "Recently added" until someone adds a watch. The empty feed suggests a search and links to Browse.
+
+### One nickname per watch
+
+- A nickname is **one short name** (≤ 24 characters, no `;`, `/` or brackets): it's shown in orange on the watch page and in the feed ("Dad rated the Batgirl").
+- Two new `extras` keys: `aka` (other names; searched, shown as "also “Batman”" next to the nickname) and `note` (short descriptions; shown in Specs). Search (`search_watches`) now also matches `aka`.
+- Migration 007 cleaned the 38 seeded nicknames that broke the rule (e.g. "Zombie; Bumblebee" → Zombie, aka Bumblebee; "Polar (white dial)" → Polar, dial colour white; "Perpetual Calendar Chronograph" wasn't a nickname, so it's now a note). It only changes a row whose nickname is still the original seeded text, and it pauses the edit-stamp trigger so these don't show as "edited by someone".
+- **126710BLNR** is now "Batgirl", also "Batman", with the note "Batgirl on the Jubilee bracelet, Batman on the Oyster". **116710BLNR** stays "Batman" (Dad's).
+- The same table lives in `db/seed/research/nickname_fixes.py`, applied by `build.py`, so a rebuilt `catalog.csv` matches the database. Catalog CSVs gained optional `aka` and `note` columns.
+- **Guard for future scrapes:** `npm run db:seed -- --check` lists bad nicknames; a real load (or `--print-sql`) refuses the whole file until they're fixed. `build.py` checks the same rule.
+
+### People
+
+- `#/people` (Me → People) lists everyone except system accounts, you first, with counts. `#/people/:id` shows rated / average / owns-now stats, their current ratings best first (10, then "Show all"), their collection (current, then sold) and their lists. Me also has "Your page".
+- Linked from: a person's entries sheet on a watch page ("Dad's page"), other people in a watch's Owners section, and the owner's name on a list.
+- The feed rows still open the watch: a row can't hold two links, and the watch is the useful target.
+
+### Back links
+
+- `BackLink` goes back in history when there is history (so a watch opened from a list returns to the list), and otherwise to a sensible screen labelled with its name ("‹ Home"). Used on the watch page and all new screens.
+
+### Browse by brand
+
+- `#/browse` (Home → "Browse by brand", and the empty search screen): brands with watch counts → `#/browse/:brand` models, each with a picture of its newest reference and a count → `#/browse/:brand/:model` references, newest first, each row led by nickname and reference with size, metal, dial and year.
+- Built for the Rolex scrape: any of the three lists gets a filter box once it has 12 or more entries (the model page filters by reference, nickname, other names, dial, metal and year). A model with one reference goes straight to the watch. Catalog queries are cached for 5 minutes.
+
 ## Phase 2 (M7–M9), Nov 27
 
 Built from the Phase 2 plan (`docs/PHASE2.md`). Adam confirmed the four open decisions at the start: private photo store, owners shown on the watch page (current and past), everyone's lists on the Lists screen (his first), and creating the Blob store.

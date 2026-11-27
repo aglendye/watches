@@ -11,8 +11,9 @@
 //   npm run db:seed -- --print-sql [file]            # print the SQL instead (JSON array per chunk)
 //
 // CSV header: brand,model,reference,nickname,case_size_mm,movement_type,case_material,
-//             dial_color,water_resistance_m,year_introduced,caliber,bezel,bracelet,production_end
-// Only brand and model are required. Lines starting with # are ignored.
+//             dial_color,water_resistance_m,year_introduced,caliber,bezel,bracelet,production_end,aka,note
+// Only brand and model are required. nickname is ONE short name ("Batman"): other
+// names go in aka ("Batgirl"), descriptions in note. Bad nicknames block a load. Lines starting with # are ignored.
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,7 +21,7 @@ import pg from 'pg';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const SEED_EMAIL = 'seed@catalog.invalid';
-const EXTRA_KEYS = ['nickname', 'caliber', 'bezel', 'bracelet', 'production_end'];
+const EXTRA_KEYS = ['nickname', 'aka', 'note', 'caliber', 'bezel', 'bracelet', 'production_end'];
 
 export function parseCsv(text) {
   const records = [];
@@ -92,6 +93,8 @@ export function writeStatements() {
     `insert into auth.users (email, password_hash, raw_user_meta_data)
        values ('${SEED_EMAIL}', 'disabled', '{"display_name":"Seed catalog"}')
        on conflict ((lower(email))) do nothing`,
+    // The seed account isn't a person: its watches stay out of the feed (migration 007).
+    `update public.profiles set is_system = true where id = ${SEED_USER} and not is_system`,
     `insert into public.brands (name, created_by)
        select distinct on (${norm('b')}) btrim(b), ${SEED_USER} from seed_in s
        where ${norm('b')} <> '' and ${brandOf('s.b')} is null
@@ -133,6 +136,25 @@ export function drawingGaps(r) {
   return gaps;
 }
 
+/**
+ * Nicknames are one short name ("Batman"), shown in orange on the watch and in
+ * the feed. Other names go in `aka` (searchable), descriptions in `note`.
+ * Returns why a row's nickname breaks that rule, or null.
+ */
+export function nicknameProblem(r) {
+  const n = (r.nickname ?? '').trim();
+  if (!n) return null;
+  if (/[;/()[\]]/.test(n)) return 'one name only: put other names in aka, details in note';
+  if (n.length > 24) return 'longer than 24 characters';
+  return null;
+}
+
+function reportNicknames(rows) {
+  const bad = rows.map((r) => [r, nicknameProblem(r)]).filter(([, p]) => p);
+  for (const [r, p] of bad) console.error(`  ! ${r.brand} ${r.model} ${r.reference}: nickname "${r.nickname}" (${p})`);
+  return bad.length;
+}
+
 export function chunks(rows, size = 200) {
   const out = [];
   for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, i + size));
@@ -145,6 +167,12 @@ async function main() {
   const check = args.includes('--check');
   const file = args.find((a) => !a.startsWith('--')) ?? path.join(here, '..', 'db', 'seed', 'catalog.csv');
   const rows = parseCsv(await readFile(file, 'utf8')).filter((r) => r.brand && r.model);
+
+  // Bad nicknames stop a load (and are listed by --check) so they never reach the app.
+  if (!check && reportNicknames(rows)) {
+    console.error('Fix the nicknames above, then run again. Nothing was loaded.');
+    process.exit(1);
+  }
 
   if (printSql) {
     console.log(JSON.stringify(chunks(rows).map(chunkStatements)));
@@ -169,6 +197,8 @@ async function main() {
         for (const { n } of left) fresh.push(part[n]);
       }
       console.log(`${rows.length} rows: ${fresh.length} new, ${rows.length - fresh.length} already in the catalog (or repeated in the file).`);
+      const badNicks = reportNicknames(fresh);
+      if (badNicks) console.log(`${badNicks} nickname(s) to fix before loading (listed above).`);
       for (const r of fresh) {
         const gaps = drawingGaps(r);
         console.log(`  + ${r.brand} ${r.model} ${r.reference}${gaps.length ? `   (drawing would lack: ${gaps.join(', ')})` : ''}`);

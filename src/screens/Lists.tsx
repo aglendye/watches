@@ -184,7 +184,14 @@ export function ListDetailScreen() {
       </div>
       <header>
         <p className="label">
-          {isOwner ? 'Your list' : `${l.display_name}’s list`} · {formatDate(localToday(new Date(l.created_at)), { short: true })}
+          {isOwner ? (
+            'Your list'
+          ) : (
+            <Link to={`/people/${l.user_id}`} className="text-accent underline-offset-4 hover:underline">
+              {l.display_name}’s list
+            </Link>
+          )}{' '}
+          · {formatDate(localToday(new Date(l.created_at)), { short: true })}
         </p>
         <h1 className="display mt-1 text-[2.5rem] leading-[1.02] break-words">{l.name}</h1>
         {l.description && <p className="mt-2 whitespace-pre-line text-[0.9375rem]">{l.description}</p>}

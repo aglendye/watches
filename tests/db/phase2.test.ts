@@ -281,3 +281,83 @@ describe('M9 photos', () => {
     await alice.call('watches.delete', { id });
   });
 });
+
+describe('review fixes: seed activity, nicknames, people, browsing', () => {
+  it('watches added by the seed account stay out of the feed and Recently added', async () => {
+    // Load two watches through the real seed statements (creates the seed account).
+    // @ts-expect-error plain JS script
+    const { chunkStatements, parseCsv } = await import('../../scripts/seed.mjs');
+    const csv = 'brand,model,reference,nickname,aka,note\nSeedwerk,Diver,SW-1,Hulk,Kermit,Test note\nSeedwerk,Pilot,SW-2,,,';
+    const pg = (await import('pg')).default;
+    const { TEST_URL } = await import('./harness');
+    const c = new pg.Client({ connectionString: TEST_URL });
+    await c.connect();
+    await c.query('begin');
+    for (const stmt of chunkStatements(parseCsv(csv)) as string[]) await c.query(stmt);
+    await c.query('commit');
+    await c.end();
+
+    const [seed] = await sqlOwner(`select is_system from public.profiles where display_name = 'Seed catalog'`);
+    expect(seed.is_system).toBe(true);
+    const feed = await alice.call('home.feed');
+    expect(feed.some((f: any) => f.brand_name === 'Seedwerk')).toBe(false);
+    expect(feed.some((f: any) => f.kind === 'watch')).toBe(true); // people's watches still show
+    const recent = await alice.call('home.recent');
+    expect(recent.some((w: any) => w.brand_name === 'Seedwerk')).toBe(false);
+    expect(recent.length).toBeGreaterThan(0);
+
+    // aka is searchable; extras hold aka and note
+    const hits = await alice.call('watches.search', { q: 'seedwerk kermit' });
+    expect(hits[0]).toMatchObject({ model_name: 'Diver', nickname: 'Hulk' });
+    expect(hits[0].extras).toMatchObject({ aka: 'Kermit', note: 'Test note' });
+
+    // people can't flag themselves as system
+    await expect(sqlAs(bob, 'update public.profiles set is_system = true where id = auth.uid()')).rejects.toMatchObject({ code: '42501' });
+    // and system accounts have no person page
+    const [s] = await sqlOwner(`select id from public.profiles where display_name = 'Seed catalog'`);
+    await expect(alice.call('people.get', { id: s.id })).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('the seed tool flags nicknames that aren’t one short name', async () => {
+    // @ts-expect-error plain JS script
+    const { nicknameProblem } = await import('../../scripts/seed.mjs');
+    expect(nicknameProblem({ nickname: 'Batman' })).toBeNull();
+    expect(nicknameProblem({ nickname: '' })).toBeNull();
+    expect(nicknameProblem({ nickname: 'Zombie; Bumblebee' })).toMatch(/aka/);
+    expect(nicknameProblem({ nickname: 'Polar (white dial)' })).toMatch(/aka/);
+    expect(nicknameProblem({ nickname: 'Pepsi / Coke' })).toMatch(/aka/);
+    expect(nicknameProblem({ nickname: 'Silver Snoopy Award 50th Anniversary' })).toMatch(/24/);
+  });
+
+  it('person pages: everyone listed (me first), with ratings best first, collection and lists', async () => {
+    const people = await bob.call('people.index');
+    expect(people[0].display_name).toBe('Bob');
+    expect(people.map((p: any) => p.display_name)).not.toContain('Seed catalog');
+
+    const [a] = await sqlOwner(`select id from public.profiles where display_name = 'Alice'`);
+    await alice.call('ratings.create', { watchId, score: 6, ratedOn: '2026-01-01' });
+    const omega = (await alice.call('watches.add', { brand: 'Omega', model: 'Speedmaster Professional' })).id;
+    await alice.call('ratings.create', { watchId: omega, score: 9, ratedOn: '2026-02-01' });
+    const page = await bob.call('people.get', { id: a.id });
+    expect(page).toMatchObject({ display_name: 'Alice', is_me: false, avg_score: 7.5 });
+    expect(page.ratings.map((r: any) => r.score)).toEqual([9, 6]);
+    expect(page.ratings[1].extras.nickname).toBe('Batman');
+    expect(page.collection.length).toBeGreaterThan(0);
+    expect(Array.isArray(page.lists)).toBe(true);
+    expect((await alice.call('people.get', { id: a.id })).is_me).toBe(true);
+  });
+
+  it('browse: brands -> models -> references', async () => {
+    const brands = await alice.call('catalog.brands');
+    const rolex = brands.find((b: any) => b.name === 'Rolex');
+    expect(rolex.watch_count).toBeGreaterThan(0);
+    const brand = await alice.call('catalog.brand', { id: rolex.id });
+    const gmt = brand.models.find((m: any) => m.name === 'GMT-Master II');
+    expect(gmt.sample.brand_name).toBe('Rolex');
+    expect(gmt.rating_count).toBeGreaterThanOrEqual(1);
+    const model = await alice.call('catalog.model', { id: gmt.id });
+    expect(model).toMatchObject({ name: 'GMT-Master II', brand_name: 'Rolex' });
+    expect(model.watches[0]).toMatchObject({ watch_reference: '116710BLNR', nickname: 'Batman' });
+    await expect(alice.call('catalog.brand', { id: '00000000-0000-0000-0000-000000000000' })).rejects.toMatchObject({ status: 404 });
+  });
+});

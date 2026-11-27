@@ -200,3 +200,60 @@ export interface WatchPhoto {
   url: string;
   can_delete: boolean;
 }
+
+export interface PersonSummary {
+  id: string;
+  display_name: string;
+  created_at: string;
+  rated_count: number;
+  owned_count: number;
+  list_count: number;
+}
+
+export interface PersonRating extends WatchArtFields {
+  id: string;
+  watch_id: string;
+  score: number;
+  review_text: string | null;
+  rated_on: string;
+  created_at: string;
+}
+
+export interface PersonDetail {
+  id: string;
+  display_name: string;
+  created_at: string;
+  is_me: boolean;
+  avg_score: number | null;
+  ratings: PersonRating[];
+  collection: CollectionItem[];
+  lists: { id: string; name: string; description: string | null; created_at: string; item_count: number }[];
+}
+
+export interface BrandSummary {
+  id: string;
+  name: string;
+  model_count: number;
+  watch_count: number;
+}
+
+export interface BrandDetail {
+  id: string;
+  name: string;
+  models: {
+    id: string;
+    name: string;
+    watch_count: number;
+    rating_count: number;
+    sample_watch_id: string;
+    sample: (WatchArtFields & { watch_id: string }) | null;
+  }[];
+}
+
+export interface ModelDetail {
+  id: string;
+  name: string;
+  brand_id: string;
+  brand_name: string;
+  watches: (SearchResult & { case_size_mm: number | null; year_introduced: number | null })[];
+}

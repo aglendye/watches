@@ -8,7 +8,7 @@ import { PhotoGallery, PhotoPicker, type PhotoPickerHandle } from '../components
 import { RatingSheet } from '../components/RatingSheet';
 import { WatchName } from '../components/WatchItems';
 import { Sheet } from '../components/Sheet';
-import { Button, EmptyState, ErrorState, ScoreBadge, SectionTitle, SkeletonRows } from '../components/ui';
+import { BackLink, Button, EmptyState, ErrorState, ScoreBadge, SectionTitle, SkeletonRows } from '../components/ui';
 import { errorMessage } from '../lib/api';
 import { useMe } from '../lib/auth';
 import { formatDate, localToday, plural, watchTitle } from '../lib/format';
@@ -19,6 +19,7 @@ const EXTRA_LABELS: Record<string, string> = {
   bezel: 'Bezel',
   bracelet: 'Bracelet / strap',
   production_end: 'Discontinued',
+  note: 'Note',
 };
 
 const MOVEMENT: Record<string, string> = { automatic: 'Automatic', manual: 'Manual wind', quartz: 'Quartz', other: 'Other' };
@@ -32,7 +33,7 @@ function specRows(w: WatchDetail): [string, string][] {
   if (w.water_resistance_m !== null) rows.push(['Water resistance', `${w.water_resistance_m} m`]);
   if (w.year_introduced !== null) rows.push(['Introduced', String(w.year_introduced)]);
   for (const [k, v] of Object.entries(w.extras ?? {})) {
-    if (k === 'nickname' || v === null || v === '') continue;
+    if (k === 'nickname' || k === 'aka' || v === null || v === '') continue;
     rows.push([EXTRA_LABELS[k] ?? k, String(v)]);
   }
   return rows;
@@ -80,9 +81,7 @@ export function Watch() {
     <article className="space-y-5">
       <header className="space-y-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="inline-flex min-h-11 items-center font-semibold text-accent">
-            ‹ Home
-          </Link>
+          <BackLink to="/">Home</BackLink>
           <Link to={`/watch/${w.watch_id}/edit`} className="inline-flex min-h-11 items-center font-semibold text-muted">
             Edit details
           </Link>
@@ -103,6 +102,9 @@ export function Watch() {
           <h1 className="display mt-1 text-[2.5rem]">{w.model_name}</h1>
           <p className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
             {nickname && <span className="font-semibold text-accent">“{nickname}”</span>}
+            {typeof w.extras?.aka === 'string' && w.extras.aka && (
+              <span className="text-sm text-muted">also “{w.extras.aka}”</span>
+            )}
             <span className={t.hasReference ? 'mono text-sm text-muted' : 'text-sm text-muted italic'}>
               {t.hasReference ? w.reference : 'reference not specified'}
             </span>
@@ -281,6 +283,14 @@ function PersonEntries({
           ))}
         </ul>
       )}
+      {person && (
+        <Link
+          to={`/people/${person.user_id}`}
+          className="display mt-4 flex min-h-12 items-center justify-center border border-line text-lg tracking-[0.06em]"
+        >
+          {isMe ? 'Your page' : `${person.display_name}’s page`} ›
+        </Link>
+      )}
     </Sheet>
   );
 }
@@ -344,7 +354,9 @@ function Owners({
                     {body}
                   </button>
                 ) : (
-                  <div className={cls}>{body}</div>
+                  <Link to={`/people/${o.user_id}`} className={cls} aria-label={`${o.display_name}${detail ? `, ${detail}` : ''}. Open their page`}>
+                    {body}
+                  </Link>
                 )}
               </li>
             );

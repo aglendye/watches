@@ -478,6 +478,7 @@ export const userActions: Record<string, Action> = {
               from public.watches w
               join public.profiles p on p.id = w.created_by
               ${WATCH_JOINS}
+             where not p.is_system  -- seeded catalog watches aren't activity
              order by w.created_at desc limit 30)
            union all
            (select 'list', l.id, l.created_at, l.user_id, p.display_name, null::uuid,
@@ -507,7 +508,13 @@ export const userActions: Record<string, Action> = {
   async 'home.recent'(_p, ctx) {
     const [rows] = await user(
       ctx,
-      q(`select ${CATALOG_COLS} from public.watch_catalog c order by c.created_at desc limit 12`),
+      // Watches people added; the seeded catalog is reached by search and browsing.
+      q(
+        `select ${CATALOG_COLS} from public.watch_catalog c
+           join public.profiles p on p.id = c.created_by
+          where not p.is_system
+          order by c.created_at desc limit 12`,
+      ),
     );
     return rows;
   },
@@ -760,5 +767,144 @@ export const userActions: Record<string, Action> = {
     if (!rows[0]) throw forbidden('Only the person who added this photo (or an admin) can delete it.');
     await removeFiles([rows[0].storage_path as string]);
     return { ok: true };
+  },
+
+  // -------------------------------------------------------------------
+  // people: everyone's page (ratings, collection, lists)
+  // -------------------------------------------------------------------
+  async 'people.index'(_p, ctx) {
+    const [rows] = await user(
+      ctx,
+      q(
+        `select p.id, p.display_name, p.created_at,
+                (select count(*) from public.current_ratings r where r.user_id = p.id)::int as rated_count,
+                (select count(*) from public.ownerships o where o.user_id = p.id and o.sold_on is null)::int as owned_count,
+                (select count(*) from public.lists l where l.user_id = p.id)::int as list_count
+           from public.profiles p
+          where not p.is_system
+          order by (p.id = auth.uid()) desc, lower(p.display_name)`,
+      ),
+    );
+    return rows;
+  },
+
+  async 'people.get'(p, ctx) {
+    const id = v.uuid(p, 'id');
+    const [profile, ratings, owned, lists] = await user(
+      ctx,
+      q(
+        `select p.id, p.display_name, p.created_at, (p.id = auth.uid()) as is_me,
+                (select round(avg(r.score)::numeric, 1)::float8 from public.current_ratings r where r.user_id = p.id) as avg_score
+           from public.profiles p where p.id = $1 and not p.is_system`,
+        id,
+      ),
+      // Their current (latest) rating of each watch, best first.
+      q(
+        `select r.id, r.watch_id, r.score, r.review_text, r.rated_on::text as rated_on, r.created_at, ${WATCH_ART_COLS}
+           from public.current_ratings r
+           join public.watches w on w.id = r.watch_id
+           ${WATCH_JOINS}
+          where r.user_id = $1
+          order by r.score desc, r.rated_on desc, r.created_at desc
+          limit 200`,
+        id,
+      ),
+      q(
+        `select ${OWNERSHIP_COLS}, ${WATCH_ART_COLS}
+           from public.ownerships o
+           join public.watches w on w.id = o.watch_id
+           ${WATCH_JOINS}
+          where o.user_id = $1
+          order by o.acquired_on desc nulls last, o.created_at desc`,
+        id,
+      ),
+      q(
+        `select l.id, l.name, l.description, l.created_at,
+                (select count(*) from public.list_items i where i.list_id = l.id)::int as item_count
+           from public.lists l where l.user_id = $1
+          order by l.created_at desc`,
+        id,
+      ),
+    );
+    if (!profile[0]) throw notFound('This person doesn’t exist.');
+    return { ...profile[0], ratings, collection: owned, lists };
+  },
+
+  // -------------------------------------------------------------------
+  // browse the catalog: brands -> models -> references
+  // -------------------------------------------------------------------
+  async 'catalog.brands'(_p, ctx) {
+    const [rows] = await user(
+      ctx,
+      q(
+        `select b.id, b.name,
+                count(distinct m.id)::int as model_count,
+                count(w.id)::int as watch_count
+           from public.brands b
+           join public.models m on m.brand_id = b.id
+           join public.watches w on w.model_id = m.id
+          group by b.id
+          order by lower(b.name)`,
+      ),
+    );
+    return rows;
+  },
+
+  async 'catalog.brand'(p, ctx) {
+    const id = v.uuid(p, 'id');
+    const [brand, models] = await user(
+      ctx,
+      q('select id, name from public.brands where id = $1', id),
+      // Each model with its newest reference as the picture.
+      q(
+        `select m.id, m.name, count(*)::int as watch_count,
+                coalesce(sum(st.rating_count), 0)::int as rating_count,
+                (array_agg(w.id order by w.year_introduced desc nulls last, w.reference))[1] as sample_watch_id
+           from public.models m
+           join public.watches w on w.model_id = m.id
+           left join public.watch_stats st on st.watch_id = w.id
+          where m.brand_id = $1
+          group by m.id
+          order by lower(m.name)`,
+        id,
+      ),
+    );
+    if (!brand[0]) throw notFound('This brand doesn’t exist.');
+    const sampleIds = models.map((m) => m.sample_watch_id);
+    const [samples] = await user(
+      ctx,
+      q(
+        `select w.id as watch_id, ${WATCH_ART_COLS}
+           from public.watches w ${WATCH_JOINS}
+          where w.id = any($1::uuid[])`,
+        sampleIds,
+      ),
+    );
+    const byId = new Map(samples.map((x) => [x.watch_id, x]));
+    return { ...brand[0], models: models.map((m) => ({ ...m, sample: byId.get(m.sample_watch_id) ?? null })) };
+  },
+
+  async 'catalog.model'(p, ctx) {
+    const id = v.uuid(p, 'id');
+    const [model, watches] = await user(
+      ctx,
+      q(
+        `select m.id, m.name, b.id as brand_id, b.name as brand_name
+           from public.models m join public.brands b on b.id = m.brand_id where m.id = $1`,
+        id,
+      ),
+      q(
+        `select c.watch_id, c.brand_name, c.model_name, c.reference as watch_reference,
+                c.extras ->> 'nickname' as nickname, c.case_material, c.dial_color, c.extras,
+                c.primary_image_url, c.avg_score::float8 as avg_score, c.rating_count,
+                c.case_size_mm::float8 as case_size_mm, c.year_introduced
+           from public.watch_catalog c
+          where c.model_id = $1
+          order by c.year_introduced desc nulls last, c.reference nulls first`,
+        id,
+      ),
+    );
+    if (!model[0]) throw notFound('This model doesn’t exist.');
+    return { ...model[0], watches };
   },
 };
