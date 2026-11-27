@@ -1,9 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import type { CommunityRating, Ownership, RatingEntry, WatchDetail, WatchOwner } from '../../shared/types';
 import { WatchArt, WatchImage } from '../components/WatchArt';
 import { AddToListSheet } from '../components/ListSheets';
 import { OwnershipSheet } from '../components/OwnershipSheet';
+import { PhotoGallery, PhotoPicker, type PhotoPickerHandle } from '../components/Photos';
 import { RatingSheet } from '../components/RatingSheet';
 import { WatchName } from '../components/WatchItems';
 import { Sheet } from '../components/Sheet';
@@ -11,7 +12,7 @@ import { Button, EmptyState, ErrorState, ScoreBadge, SectionTitle, SkeletonRows 
 import { errorMessage } from '../lib/api';
 import { useMe } from '../lib/auth';
 import { formatDate, localToday, plural, watchTitle } from '../lib/format';
-import { useCommunityRatings, useOwners, usePersonEntries, useWatch } from '../lib/queries';
+import { useCommunityRatings, useOwners, usePersonEntries, usePhotos, useWatch } from '../lib/queries';
 
 const EXTRA_LABELS: Record<string, string> = {
   caliber: 'Caliber',
@@ -49,6 +50,9 @@ export function Watch() {
   const [owning, setOwning] = useState<{ open: boolean; ownership: Ownership | null }>({ open: false, ownership: null });
   const owners = useOwners(id);
   const [listing, setListing] = useState(false);
+  const photos = usePhotos(id);
+  const picker = useRef<PhotoPickerHandle>(null);
+  const [shownPhotoId, setShownPhotoId] = useState<string | null>(null);
 
   // ?rate=1 opens the rating sheet once, then is removed from the URL.
   useEffect(() => {
@@ -68,6 +72,9 @@ export function Watch() {
   const specs = specRows(w);
 
   const nickname = typeof w.extras?.nickname === 'string' && w.extras.nickname ? w.extras.nickname : null;
+  // The hero shows the photo picked in the gallery, else the primary (oldest) photo, else the drawing.
+  const shown = photos.data?.find((p) => p.id === shownPhotoId) ?? null;
+  const heroUrl = shown?.url ?? w.primary_image_url ?? null;
 
   return (
     <article className="space-y-5">
@@ -82,8 +89,8 @@ export function Watch() {
         </div>
         {/* The uploaded photo when there is one (Phase 2), otherwise a drawing from the watch's data */}
         <div className="hero relative grid h-64 place-items-center overflow-hidden border border-line">
-          {w.primary_image_url ? (
-            <WatchImage watch={w} photoUrl={w.primary_image_url} className="h-full w-full" />
+          {heroUrl ? (
+            <WatchImage watch={w} photoUrl={heroUrl} className="h-full w-full" />
           ) : (
             <>
               <WatchArt watch={w} className="h-[84%] w-auto" />
@@ -120,7 +127,12 @@ export function Watch() {
       <div role="group" aria-label="More actions" className="grid grid-flow-col auto-cols-fr divide-x divide-line border border-line">
         <ActionButton onClick={() => setOwning({ open: true, ownership: null })}>I own this</ActionButton>
         <ActionButton onClick={() => setListing(true)}>Add to list</ActionButton>
+        <ActionButton onClick={() => picker.current?.pick()}>Add photo</ActionButton>
       </div>
+
+      {photos.data && photos.data.length > 0 && (
+        <PhotoGallery photos={photos.data} meId={me.id} selectedId={shown?.id ?? null} onSelect={(p) => setShownPhotoId(p.id)} />
+      )}
 
       <section aria-labelledby="specs-title">
         <SectionTitle id="specs-title">Specs</SectionTitle>
@@ -215,6 +227,7 @@ export function Watch() {
         ownership={owning.ownership}
         title={<WatchName w={w} />}
       />
+      <PhotoPicker ref={picker} watchId={w.watch_id} title={<WatchName w={w} />} />
       <AddToListSheet open={listing} onClose={() => setListing(false)} watchId={w.watch_id} title={<WatchName w={w} />} />
       <PersonEntries
         watchId={w.watch_id}

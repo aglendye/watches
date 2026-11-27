@@ -22,6 +22,7 @@ import type {
   SearchResult,
   SpecUpdate,
   WatchDetail,
+  WatchPhoto,
 } from '../../shared/types';
 import { call } from './api';
 
@@ -209,3 +210,22 @@ export const useRemoveListItem = () =>
 
 export const useUpdateListNote = () =>
   useWrite((p: { listId: string; watchId: string; note: string }) => call<{ ok: true }>('listItems.updateNote', p));
+
+// ---------------------------------------------------------------------
+// Photos (M9)
+// ---------------------------------------------------------------------
+export function usePhotos(watchId: string) {
+  return useQuery({
+    queryKey: ['photos', watchId],
+    queryFn: () => call<WatchPhoto[]>('photos.forWatch', { watchId }),
+    staleTime: LIST_STALE,
+  });
+}
+
+export const useDeletePhoto = () => useWrite((id: string) => call<{ ok: true }>('photos.delete', { id }));
+
+/** After an upload (which doesn't go through call()), refresh everything. */
+export function useAfterUpload() {
+  const qc = useQueryClient();
+  return () => qc.invalidateQueries();
+}

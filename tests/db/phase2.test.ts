@@ -2,6 +2,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb } from '../../server/db';
 import { Client, freshDatabase, signUp, sqlAs, sqlOwner } from './harness';
+import { handlePhoto, handleUpload } from '../../server/photos';
+import { memoryStorage, setStorage } from '../../server/storage';
 
 let alice: Client;
 let bob: Client;
@@ -171,5 +173,111 @@ describe('M8 lists', () => {
     const [n] = await sqlOwner('select count(*)::int as n from public.list_items where list_id = $1', [tmp]);
     expect(n.n).toBe(0);
     await expect(bob.call('lists.get', { id: tmp })).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe('M9 photos', () => {
+  const files = memoryStorage();
+  const jpeg = (n = 1000) => new Uint8Array([0xff, 0xd8, 0xff, 0xe0, ...new Array(n).fill(7)]);
+  let watch2: string;
+
+  function upload(c: Client | null, watch: string, body: Uint8Array = jpeg(), type = 'image/jpeg') {
+    return handleUpload({
+      method: 'POST',
+      headers: {
+        'x-requested-with': 'watch-app',
+        'content-type': type,
+        cookie: c?.token ? `wr_session=${encodeURIComponent(c.token)}` : undefined,
+      },
+      query: new URLSearchParams({ watchId: watch, w: '1600', h: '1200' }),
+      body,
+    });
+  }
+  function fetchPhoto(c: Client | null, url: string, etag?: string) {
+    return handlePhoto({
+      method: 'GET',
+      headers: { cookie: c?.token ? `wr_session=${encodeURIComponent(c.token)}` : undefined, 'if-none-match': etag },
+      query: new URL(url, 'http://x').searchParams,
+    });
+  }
+  const data = (r: { body: unknown }) => (r.body as { data: any }).data;
+
+  beforeAll(async () => {
+    setStorage(files);
+    watch2 = (await alice.call('watches.add', { brand: 'Omega', model: 'Seamaster 300M' })).id;
+  });
+
+  it('uploads go to storage and the oldest photo becomes primary everywhere', async () => {
+    const first = await upload(alice, watch2);
+    expect(first.status).toBe(200);
+    const a = data(first);
+    expect(files.files.has(`watch-images/${watch2}/${a.id}.jpg`)).toBe(true);
+    await new Promise((r) => setTimeout(r, 10));
+    const b = data(await upload(bob, watch2));
+
+    const w = await bob.call('watches.get', { id: watch2 });
+    expect(w.primary_image_url).toBe(a.url);
+    const photos = await bob.call('photos.forWatch', { watchId: watch2 });
+    expect(photos.map((x: any) => [x.id, x.display_name, x.can_delete, x.width])).toEqual([
+      [a.id, 'Alice', false, 1600],
+      [b.id, 'Bob', true, 1600],
+    ]);
+    const hits = await bob.call('watches.search', { q: 'seamaster 300m' });
+    expect(hits.find((h: any) => h.watch_id === watch2).primary_image_url).toBe(a.url);
+    expect((await bob.call('home.recent')).find((h: any) => h.watch_id === watch2).primary_image_url).toBe(a.url);
+
+    const feed = await alice.call('home.feed');
+    const item = feed.find((f: any) => f.kind === 'photo' && f.id === b.id);
+    expect(item).toMatchObject({ display_name: 'Bob', watch_id: watch2, image_url: b.url, model_name: 'Seamaster 300M' });
+  });
+
+  it('serves photos to signed-in users only, with an ETag for revalidation', async () => {
+    const [p] = await alice.call('photos.forWatch', { watchId: watch2 });
+    const ok = await fetchPhoto(bob, p.url);
+    expect(ok.status).toBe(200);
+    expect(ok.headers['Content-Type']).toBe('image/jpeg');
+    expect(ok.headers['Cache-Control']).toMatch(/^private/);
+    expect((await fetchPhoto(bob, p.url, ok.headers.ETag)).status).toBe(304);
+    expect((await fetchPhoto(null, p.url)).status).toBe(401);
+    expect((await fetchPhoto(bob, '/api/photo?id=00000000-0000-0000-0000-000000000000')).status).toBe(404);
+  });
+
+  it('rejects bad uploads', async () => {
+    expect((await upload(null, watch2)).status).toBe(401);
+    expect((await upload(alice, watch2, new Uint8Array([1, 2, 3, 4]))).status).toBe(400);
+    expect((await upload(alice, watch2, jpeg(), 'image/png')).status).toBe(400);
+    expect((await upload(alice, watch2, jpeg(4 * 1024 * 1024))).status).toBe(413);
+    expect((await upload(alice, '00000000-0000-0000-0000-000000000000')).status).toBe(404);
+    const noHeader = await handleUpload({ method: 'POST', headers: { 'content-type': 'image/jpeg' }, query: new URLSearchParams({ watchId: watch2 }), body: jpeg() });
+    expect(noHeader.status).toBe(400);
+  });
+
+  it('only the uploader or an admin deletes; deleting the primary promotes the next oldest', async () => {
+    const [a, b] = await alice.call('photos.forWatch', { watchId: watch2 });
+    await expect(bob.call('photos.delete', { id: a.id })).rejects.toMatchObject({ status: 403 });
+    await expect(sqlAs(bob, 'update public.watch_images set uploaded_by = auth.uid() where id = $1', [a.id])).rejects.toMatchObject({ code: '42501' });
+    await alice.call('photos.delete', { id: a.id });
+    expect(files.files.has(`watch-images/${watch2}/${a.id}.jpg`)).toBe(false);
+    expect((await bob.call('watches.get', { id: watch2 })).primary_image_url).toBe(b.url);
+    // an admin can delete anyone's
+    const c = data(await upload(alice, watch2));
+    await admin.call('photos.delete', { id: c.id });
+    expect((await bob.call('photos.forWatch', { watchId: watch2 })).map((x: any) => x.id)).toEqual([b.id]);
+  });
+
+  it("someone else's photo blocks the creator deleting the watch; deleting a watch removes its files", async () => {
+    // Bob's photo is on Alice's watch.
+    expect((await alice.call('watches.get', { id: watch2 })).can_delete).toBe(false);
+    await expect(alice.call('watches.delete', { id: watch2 })).rejects.toThrow('Other people have');
+    const [b] = await bob.call('photos.forWatch', { watchId: watch2 });
+    await admin.call('watches.delete', { id: watch2 });
+    expect(files.files.has(`watch-images/${watch2}/${b.id}.jpg`)).toBe(false);
+    expect((await sqlOwner('select count(*)::int as n from public.watch_images where watch_id = $1', [watch2]))[0].n).toBe(0);
+
+    // Own photos don't block.
+    const { id } = await alice.call('watches.add', { brand: 'Omega', model: 'Aqua Terra' });
+    await upload(alice, id);
+    expect((await alice.call('watches.get', { id })).can_delete).toBe(true);
+    await alice.call('watches.delete', { id });
   });
 });

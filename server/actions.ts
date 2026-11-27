@@ -11,6 +11,7 @@ import {
   sha256,
   verifyPassword,
 } from './security.js';
+import { storage } from './storage.js';
 import * as v from './validate.js';
 
 export interface Ctx {
@@ -59,16 +60,26 @@ const ME_SQL = `select p.id, p.display_name as "displayName", p.is_admin as "isA
 const CATALOG_COLS = `c.watch_id, c.brand_id, c.brand_name, c.model_id, c.model_name, c.reference,
   c.case_size_mm::float8 as case_size_mm, c.movement_type, c.case_material, c.dial_color,
   c.water_resistance_m, c.year_introduced, c.extras, c.created_by, c.created_at,
-  c.avg_score::float8 as avg_score, c.rating_count`;
+  c.avg_score::float8 as avg_score, c.rating_count, c.primary_image_url`;
 
 /** Brand, model and the fields the drawing needs, for a watch aliased w joined to m and b. */
 const WATCH_ART_COLS = `b.name as brand_name, m.name as model_name, w.reference,
-  w.case_material, w.dial_color, w.extras`;
+  w.case_material, w.dial_color, w.extras, public.primary_image_url(w.id) as primary_image_url`;
 const WATCH_JOINS = `join public.models m on m.id = w.model_id
   join public.brands b on b.id = m.brand_id`;
 
 const OWNERSHIP_COLS = `o.id, o.user_id, o.watch_id, o.acquired_on::text as acquired_on,
   o.sold_on::text as sold_on, o.notes, o.created_at`;
+
+/** Deletes photo files after their rows are gone. A failure leaves an orphan file, never a broken row. */
+async function removeFiles(paths: string[]) {
+  if (!paths.length) return;
+  try {
+    await storage().del(paths);
+  } catch (err) {
+    console.error('Could not delete photo files', paths, err);
+  }
+}
 
 function ownershipInput(p: Params) {
   const acquired = v.optPastDate(p, 'acquiredOn', 'acquired date');
@@ -174,6 +185,7 @@ export const userActions: Record<string, Action> = {
       q(
         `select s.watch_id, s.brand_name, s.model_name, s.watch_reference, s.match_score,
                 w.extras ->> 'nickname' as nickname, w.case_material, w.dial_color, w.extras,
+                public.primary_image_url(w.id) as primary_image_url,
                 st.avg_score::float8 as avg_score, coalesce(st.rating_count, 0) as rating_count
            from public.search_watches($1, $2) s
            join public.watches w on w.id = s.watch_id
@@ -338,8 +350,14 @@ export const userActions: Record<string, Action> = {
 
   async 'watches.delete'(p, ctx) {
     const id = v.uuid(p, 'id');
-    const [rows] = await user(ctx, q('delete from public.watches where id = $1 returning id', id));
+    // Photos go with the watch (cascade); their files are removed afterwards.
+    const [photos, rows] = await user(
+      ctx,
+      q('select storage_path from public.watch_images where watch_id = $1', id),
+      q('delete from public.watches where id = $1 returning id', id),
+    );
     if (!rows[0]) throw forbidden('Only the person who added this watch (or an admin) can delete it.');
+    await removeFiles(photos.map((r) => r.storage_path as string));
     return { ok: true };
   },
 
@@ -420,8 +438,7 @@ export const userActions: Record<string, Action> = {
     const [rows] = await user(
       ctx,
       q(
-        `select ${RATING_COLS}, b.name as brand_name, m.name as model_name, w.reference,
-                w.case_material, w.dial_color, w.extras
+        `select ${RATING_COLS}, ${WATCH_ART_COLS}
            from public.ratings r
            join public.watches w on w.id = r.watch_id
            join public.models m on m.id = w.model_id
@@ -437,7 +454,7 @@ export const userActions: Record<string, Action> = {
 
   async 'home.feed'(_p, ctx) {
     // Built from the tables (no events table): ratings, new watches, new
-    // lists. Ownership is deliberately left out (PRD 5.11).
+    // lists, new photos. Ownership is deliberately left out (PRD 5.11).
     const [rows] = await user(
       ctx,
       q(
@@ -446,7 +463,8 @@ export const userActions: Record<string, Action> = {
                    b.name as brand_name, m.name as model_name, w.reference,
                    w.case_material, w.dial_color, w.extras,
                    r.score, left(r.review_text, 141) as snippet,
-                   null::uuid as list_id, null::text as list_name
+                   null::uuid as list_id, null::text as list_name,
+                   public.primary_image_url(w.id) as primary_image_url, null::text as image_url
               from public.ratings r
               join public.profiles p on p.id = r.user_id
               join public.watches w on w.id = r.watch_id
@@ -455,7 +473,8 @@ export const userActions: Record<string, Action> = {
            union all
            (select 'watch', w.id, w.created_at, w.created_by, p.display_name, w.id,
                    b.name, m.name, w.reference, w.case_material, w.dial_color, w.extras,
-                   null::smallint, null::text, null::uuid, null::text
+                   null::smallint, null::text, null::uuid, null::text,
+                   public.primary_image_url(w.id), null::text
               from public.watches w
               join public.profiles p on p.id = w.created_by
               ${WATCH_JOINS}
@@ -463,10 +482,20 @@ export const userActions: Record<string, Action> = {
            union all
            (select 'list', l.id, l.created_at, l.user_id, p.display_name, null::uuid,
                    null::text, null::text, null::text, null::text, null::text, null::jsonb,
-                   null::smallint, null::text, l.id, l.name
+                   null::smallint, null::text, l.id, l.name, null::text, null::text
               from public.lists l
               join public.profiles p on p.id = l.user_id
              order by l.created_at desc limit 30)
+           union all
+           (select 'photo', i.id, i.created_at, i.uploaded_by, p.display_name, w.id,
+                   b.name, m.name, w.reference, w.case_material, w.dial_color, w.extras,
+                   null::smallint, null::text, null::uuid, null::text,
+                   public.primary_image_url(w.id), '/api/photo?id=' || i.id
+              from public.watch_images i
+              join public.profiles p on p.id = i.uploaded_by
+              join public.watches w on w.id = i.watch_id
+              ${WATCH_JOINS}
+             order by i.created_at desc limit 30)
          ) f
          order by created_at desc
          limit 30`,
@@ -699,6 +728,37 @@ export const userActions: Record<string, Action> = {
       ),
     );
     if (!rows[0]) throw forbidden('You can only change your own lists.');
+    return { ok: true };
+  },
+
+  // -------------------------------------------------------------------
+  // photos (M9). Uploads go through /api/photo-upload (server/photos.ts).
+  // -------------------------------------------------------------------
+  async 'photos.forWatch'(p, ctx) {
+    const watchId = v.uuid(p, 'watchId');
+    const [rows] = await user(
+      ctx,
+      q(
+        `select i.id, i.uploaded_by, pr.display_name, i.width, i.height, i.created_at,
+                '/api/photo?id=' || i.id as url,
+                (i.uploaded_by = auth.uid() or public.is_admin()) as can_delete
+           from public.watch_images i
+           join public.profiles pr on pr.id = i.uploaded_by
+          where i.watch_id = $1
+          order by i.created_at, i.id`,
+        watchId,
+      ),
+    );
+    return rows;
+  },
+
+  async 'photos.delete'(p, ctx) {
+    const [rows] = await user(
+      ctx,
+      q('delete from public.watch_images where id = $1 returning storage_path', v.uuid(p, 'id')),
+    );
+    if (!rows[0]) throw forbidden('Only the person who added this photo (or an admin) can delete it.');
+    await removeFiles([rows[0].storage_path as string]);
     return { ok: true };
   },
 };

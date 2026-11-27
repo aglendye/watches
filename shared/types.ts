@@ -189,3 +189,14 @@ export interface MyListForWatch {
   item_count: number;
   contains: boolean;
 }
+
+export interface WatchPhoto {
+  id: string;
+  uploaded_by: string;
+  display_name: string;
+  width: number | null;
+  height: number | null;
+  created_at: string;
+  url: string;
+  can_delete: boolean;
+}
