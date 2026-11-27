@@ -147,8 +147,10 @@ export const userActions: Record<string, Action> = {
       ctx,
       q(
         `select s.watch_id, s.brand_name, s.model_name, s.watch_reference, s.match_score,
+                w.extras ->> 'nickname' as nickname,
                 st.avg_score::float8 as avg_score, coalesce(st.rating_count, 0) as rating_count
            from public.search_watches($1, $2) s
+           join public.watches w on w.id = s.watch_id
            left join public.watch_stats st on st.watch_id = s.watch_id
           order by s.match_score desc, s.brand_name, s.model_name`,
         query,

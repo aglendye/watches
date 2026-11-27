@@ -15,6 +15,7 @@ export interface SearchResult {
   model_name: string;
   watch_reference: string | null;
   match_score: number;
+  nickname: string | null;
   avg_score: number | null;
   rating_count: number;
 }

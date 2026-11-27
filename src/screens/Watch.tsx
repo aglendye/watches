@@ -11,6 +11,13 @@ import { useMe } from '../lib/auth';
 import { formatDate, localToday, plural, watchTitle } from '../lib/format';
 import { useCommunityRatings, usePersonEntries, useWatch } from '../lib/queries';
 
+const EXTRA_LABELS: Record<string, string> = {
+  caliber: 'Caliber',
+  bezel: 'Bezel',
+  bracelet: 'Bracelet / strap',
+  production_end: 'Discontinued',
+};
+
 const MOVEMENT: Record<string, string> = { automatic: 'Automatic', manual: 'Manual wind', quartz: 'Quartz', other: 'Other' };
 
 function specRows(w: WatchDetail): [string, string][] {
@@ -21,7 +28,10 @@ function specRows(w: WatchDetail): [string, string][] {
   if (w.dial_color) rows.push(['Dial color', w.dial_color]);
   if (w.water_resistance_m !== null) rows.push(['Water resistance', `${w.water_resistance_m} m`]);
   if (w.year_introduced !== null) rows.push(['Introduced', String(w.year_introduced)]);
-  for (const [k, v] of Object.entries(w.extras ?? {})) rows.push([k, String(v)]);
+  for (const [k, v] of Object.entries(w.extras ?? {})) {
+    if (k === 'nickname' || v === null || v === '') continue;
+    rows.push([EXTRA_LABELS[k] ?? k, String(v)]);
+  }
   return rows;
 }
 
@@ -68,6 +78,9 @@ export function Watch() {
           <p className="label">{w.brand_name}</p>
           <h1 className="text-2xl leading-tight font-bold">{w.model_name}</h1>
           <p className={`mt-1 ${t.hasReference ? 'tabular' : 'text-muted italic'}`}>{t.subtitle}</p>
+          {typeof w.extras?.nickname === 'string' && w.extras.nickname && (
+            <p className="mt-1 text-muted">“{w.extras.nickname}”</p>
+          )}
         </div>
       </header>
 

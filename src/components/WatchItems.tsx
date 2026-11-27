@@ -15,6 +15,7 @@ export function WatchRow({ w }: { w: SearchResult }) {
         <p className="line-clamp-2 leading-snug font-semibold">{t.title}</p>
         <p className={`truncate text-sm ${t.hasReference ? 'tabular text-ink' : 'text-muted italic'}`}>
           {t.hasReference ? t.subtitle : 'reference not specified'}
+          {w.nickname && <span className="text-muted not-italic"> · “{w.nickname}”</span>}
         </p>
       </div>
       <div className="shrink-0 text-right text-sm text-muted">

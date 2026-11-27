@@ -50,14 +50,14 @@ You should see `Applying 000_platform.sql`, `Applying 001_core.sql`, `Migrations
 
 ### 5. Load the starter catalog
 
-1. Review `db/seed/seed.csv`. Add Dad's collection and wishlist at the bottom as `brand,model,reference` lines (leave reference empty when unsure).
-2. Load it as your account (it's credited as "added by" you):
+`db/seed/catalog.csv` holds about 770 watches: Rolex, Omega, Breitling, Cartier, Tudor, Audemars Piguet and Patek Philippe at reference level with specs, plus well-known models from about 25 other brands. Sources and method are in `DECISIONS.md`. Seeded watches are credited to a "Seed catalog" account that cannot sign in.
 
-   ```bash
-   DATABASE_URL='<DATABASE_URL_UNPOOLED>' SEED_EMAIL='you@example.com' npm run db:seed
-   ```
+```bash
+DATABASE_URL='<DATABASE_URL_UNPOOLED>' npm run db:seed            # loads db/seed/catalog.csv
+DATABASE_URL='<DATABASE_URL_UNPOOLED>' npm run db:seed -- my.csv  # or any CSV with the same header
+```
 
-   Re-running is safe; existing watches are found, not duplicated.
+Re-running is safe: watches that already exist are left as they are. To add watches later, append rows to `catalog.csv` (only `brand` and `model` are required) and run it again. `db/seed/research/` has the scripts that generated the catalog (`python3 build.py` rebuilds it).
 
 ### 6. Test on a real iPhone
 
@@ -126,7 +126,7 @@ server/                 actions, database access, auth, validation
 shared/types.ts         types shared by API and app
 src/                    the app (screens, components, lib)
 db/migrations/          000_platform.sql (auth, roles), 001_core.sql (the original schema.sql)
-db/seed/seed.csv        starter catalog
+db/seed/catalog.csv     starter catalog (~770 watches) and research/ scripts that built it
 scripts/                migrate, seed, make-icons
 tests/unit, tests/db    tests
 ```

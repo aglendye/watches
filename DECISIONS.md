@@ -4,6 +4,24 @@ Running log for the maintainer. Newest phase at the top. "Spec" means the AI Age
 
 ## Phase 1 (M0–M6)
 
+### Seed catalog (Adam, Nov 26)
+
+Adam asked for 500 to 1,000 seeded watches from brands like Rolex, Omega, Breitling, AP, Tudor and Cartier, with specs filled in; ratings left empty; seeded watches may show as seeded in the feed.
+
+- **Result:** `db/seed/catalog.csv`, ~770 watches: Rolex 188, Breitling 154, Omega 145, Cartier 78, Tudor ~49, AP 30, Patek Philippe 23, and ~100 brand-and-model entries from 27 other brands. About 600 have a case size and about 385 an introduction year.
+- **Method:** big watch databases (WatchBase, WatchCharts) and AP/Cartier sites load their catalogs with scripts and could not be read. So:
+  - Omega, Breitling and Tudor references come from the brands' own catalog pages (exact references, case sizes, materials).
+  - Cartier references come from a jeweller's reference guide; sizes were left out where sources disagreed.
+  - Rolex, AP, Patek and older references are from collector knowledge, checked against dealer and auction listings for the ones that matter most (Dad's watches, 2025 and 2026 releases, AP references).
+  - Specs not confirmed are left blank rather than guessed. Dial colour is only filled where the reference fixes it (Rolex reference families have many dials).
+- **Nicknames** (Batman, Hulk, Pepsi, Zombie, Bruce Wayne, Wimbledon…) are stored in `extras.nickname`, and migration `002_nickname_search.sql` adds them to search. Caliber, bezel, bracelet and discontinued year are also in `extras`.
+- **Dad's watches:** Batman 116710BLNR, Hulk 116610LV, Batgirl 126710BLNR, Wimbledon Datejust 41 126334, Zombie 126713GRNR (and the yellow-gold 126718GRNR), Bruce Wayne 126710GRNR. "Black Submariner" is ambiguous (124060 no-date, 126610LN date, or an older reference), so all are in the catalog.
+- **Seed account:** watches are credited to "Seed catalog" (`seed@catalog.invalid`, password hash `disabled`, cannot sign in). The feed reads "Seed catalog added …".
+
+### Bracelet and bezel
+
+Kept in `extras` (free text such as "Jubilee or Oyster", "Bidirectional 24h, blue/black Cerachrom") rather than as core columns: Rolex sells many references on more than one bracelet, and the app has no filtering yet. If filtering is added, promote `bracelet` and `bezel` to core columns with fixed choices.
+
 ### Password reset removed (Adam, Nov 26)
 
 Adam chose to drop self-service password reset instead of setting up Gmail. The "Forgot password?" link, the reset screen, the three reset API actions, the email module and the `nodemailer` dependency are gone. The `auth.reset_codes` table stays in the database (unused, harmless) so no migration is needed. A forgotten password is reset by hand (README, "Forgotten passwords"). This deviates from PRD 5.1 and spec 8.3.
