@@ -222,3 +222,39 @@ describe('ratings, diary, feed', () => {
     expect((await alice.call('watches.lookup', { brand: 'Seiko', model: 'skx007', reference: 'nope' })).id).toBeNull();
   });
 });
+
+describe('nicknames', () => {
+  it('can be set when adding, found by search, and edited by anyone', async () => {
+    const { id } = await alice.call('watches.add', { brand: 'Rolex', model: 'GMT-Master II', reference: '116710BLNR', nickname: ' Batman ' });
+    let w = await bob.call('watches.get', { id });
+    expect(w.extras.nickname).toBe('Batman');
+    expect(w.updated_at).toBeNull(); // creating with a nickname is not an "edit"
+
+    const hits = await bob.call('watches.search', { q: 'rolex batman' });
+    expect(hits[0].watch_id).toBe(id);
+    expect(hits[0].nickname).toBe('Batman');
+
+    // Adding the same watch again with another nickname returns it unchanged.
+    const again = await bob.call('watches.add', { brand: 'rolex', model: 'gmt-master ii', reference: '116710blnr', nickname: 'Something else' });
+    expect(again.id).toBe(id);
+    expect((await bob.call('watches.get', { id })).extras.nickname).toBe('Batman');
+
+    // Anyone can edit it (like specs); other extras are kept; blank removes it.
+    await sqlOwner(`update public.watches set extras = extras || '{"caliber":"3186"}' where id = $1`, [id]);
+    await bob.call('watches.update', { id, nickname: 'The Batman' });
+    w = await alice.call('watches.get', { id });
+    expect(w.extras).toEqual({ nickname: 'The Batman', caliber: '3186' });
+    await bob.call('watches.update', { id, nickname: '' });
+    expect((await alice.call('watches.get', { id })).extras).toEqual({ caliber: '3186' });
+
+    // Updating specs without sending a nickname leaves it alone.
+    await bob.call('watches.update', { id, nickname: 'Batman' });
+    await bob.call('watches.update', { id, dial_color: 'black' });
+    expect((await alice.call('watches.get', { id })).extras.nickname).toBe('Batman');
+  });
+
+  it('three-argument add_watch still works (seed and older callers)', async () => {
+    const [row] = await sqlAs(alice, `select public.add_watch('Omega', 'Seamaster 300', null) as id`);
+    expect(row.id).toBeTruthy();
+  });
+});

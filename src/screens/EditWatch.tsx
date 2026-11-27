@@ -17,6 +17,7 @@ interface Form {
   dial_color: string;
   water_resistance_m: string;
   year_introduced: string;
+  nickname: string;
 }
 
 function toForm(w: WatchDetail): Form {
@@ -31,6 +32,7 @@ function toForm(w: WatchDetail): Form {
     dial_color: s(w.dial_color),
     water_resistance_m: s(w.water_resistance_m),
     year_introduced: s(w.year_introduced),
+    nickname: typeof w.extras?.nickname === 'string' ? w.extras.nickname : '',
   };
 }
 
@@ -85,6 +87,7 @@ function EditForm({ w }: { w: WatchDetail }) {
         dial_color: form.dial_color,
         water_resistance_m: num(form.water_resistance_m),
         year_introduced: num(form.year_introduced),
+        nickname: form.nickname.trim() || null,
         ...(w.can_edit_identity && identityChanged
           ? { brand: form.brand.trim(), model: form.model.trim(), reference: form.reference.trim() || null }
           : {}),
@@ -135,6 +138,14 @@ function EditForm({ w }: { w: WatchDetail }) {
 
         <fieldset className="space-y-3">
           <legend className="label mb-2">Specs (anyone can edit)</legend>
+          <Field
+            label="Nickname"
+            value={form.nickname}
+            onChange={set('nickname')}
+            maxLength={80}
+            autoCapitalize="words"
+            hint="What collectors call it, like Batman or Hulk. Shown in search."
+          />
           <div className="grid grid-cols-2 gap-3">
             <Field label="Case size (mm)" inputMode="decimal" value={form.case_size_mm} onChange={set('case_size_mm')} />
             <Field label="Water resistance (m)" inputMode="numeric" value={form.water_resistance_m} onChange={set('water_resistance_m')} />

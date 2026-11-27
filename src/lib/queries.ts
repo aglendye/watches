@@ -113,7 +113,7 @@ function useWrite<P, R>(fn: (p: P) => Promise<R>) {
 }
 
 export const useAddWatch = () =>
-  useWrite((p: { brand: string; model: string; reference: string }) => call<{ id: string }>('watches.add', p));
+  useWrite((p: { brand: string; model: string; reference: string; nickname?: string }) => call<{ id: string }>('watches.add', p));
 
 export const useUpdateWatch = () =>
   useWrite((p: SpecUpdate & { id: string }) => call<{ ok: true }>('watches.update', { ...p }));

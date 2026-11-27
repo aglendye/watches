@@ -164,7 +164,11 @@ export const userActions: Record<string, Action> = {
     const brand = v.str(p, 'brand', { max: 80 });
     const model = v.str(p, 'model', { max: 120 });
     const reference = v.optStr(p, 'reference', 60);
-    const [[row]] = await user(ctx, q('select public.add_watch($1, $2, $3) as id', brand, model, reference));
+    const nickname = v.optStr(p, 'nickname', 80);
+    const [[row]] = await user(
+      ctx,
+      q('select public.add_watch($1, $2, $3, $4::text) as id', brand, model, reference, nickname),
+    );
     return { id: row.id };
   },
 
@@ -283,15 +287,23 @@ export const userActions: Record<string, Action> = {
                      where lower(b.name) = lower($8) and lower(m.name) = lower($9)),
         reference = $10`;
     }
+    const values: unknown[] = [...specs.slice(0, 6), id, ...specs.slice(6)];
+    let nicknameSql = '';
+    if (p.nickname !== undefined) {
+      // Blank removes the nickname; anyone can edit it, like the other specs.
+      values.push(v.optStr(p, 'nickname', 80));
+      const n = `$${values.length}::text`;
+      nicknameSql = `,
+        extras = case when ${n} is null then extras - 'nickname'
+                      else jsonb_set(extras, '{nickname}', to_jsonb(${n})) end`;
+    }
     queries.push(
       q(
         `update public.watches set
            case_size_mm = $1, movement_type = $2, case_material = $3, dial_color = $4,
-           water_resistance_m = $5, year_introduced = $6${identitySql}
+           water_resistance_m = $5, year_introduced = $6${identitySql}${nicknameSql}
          where id = $7 returning id`,
-        ...specs.slice(0, 6),
-        id,
-        ...specs.slice(6),
+        ...values,
       ),
     );
     const results = await user(ctx, ...queries);

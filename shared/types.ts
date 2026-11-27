@@ -98,6 +98,7 @@ export interface SpecUpdate {
   dial_color?: string | null;
   water_resistance_m?: number | null;
   year_introduced?: number | null;
+  nickname?: string | null;
   /** Identity fields: only sent by the creator or an admin. */
   brand?: string;
   model?: string;

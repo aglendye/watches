@@ -18,6 +18,15 @@ Adam asked for 500 to 1,000 seeded watches from brands like Rolex, Omega, Breitl
 - **Dad's watches:** Batman 116710BLNR, Hulk 116610LV, Batgirl 126710BLNR, Wimbledon Datejust 41 126334, Zombie 126713GRNR (and the yellow-gold 126718GRNR), Bruce Wayne 126710GRNR. "Black Submariner" is ambiguous (124060 no-date, 126610LN date, or an older reference), so all are in the catalog.
 - **Seed account:** watches are credited to "Seed catalog" (`seed@catalog.invalid`, password hash `disabled`, cannot sign in). The feed reads "Seed catalog added …".
 
+### Nicknames on add and edit (Adam, Nov 26)
+
+- Add a watch has an optional Nickname field. Migration `003_add_watch_nickname.sql` adds a 4-argument `add_watch(brand, model, reference, nickname)`; the nickname is only stored when the watch is new (an existing watch is returned unchanged). The original 3-argument function is untouched.
+- Edit details has a Nickname field that anyone can edit, like specs; blank removes it. Stored in `extras.nickname`, searched by migration 002, shown under the reference on the watch page and in search results.
+
+### Watch images
+
+Not scraped: watch photos on brand, dealer and auction sites are copyrighted, and the spec rules out external images. Phase 2 photo uploads remain the plan; generated dial illustrations were offered as an interim option.
+
 ### Bracelet and bezel
 
 Kept in `extras` (free text such as "Jubilee or Oyster", "Bidirectional 24h, blue/black Cerachrom") rather than as core columns: Rolex sells many references on more than one bracelet, and the app has no filtering yet. If filtering is added, promote `bracelet` and `bezel` to core columns with fixed choices.

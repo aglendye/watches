@@ -42,6 +42,7 @@ export function AddWatch() {
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [reference, setReference] = useState('');
+  const [nickname, setNickname] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,7 +74,12 @@ export function AddWatch() {
     }
     setError(null);
     try {
-      const { id } = await add.mutateAsync({ brand: brand.trim(), model: model.trim(), reference: reference.trim() });
+      const { id } = await add.mutateAsync({
+        brand: brand.trim(),
+        model: model.trim(),
+        reference: reference.trim(),
+        nickname: nickname.trim(),
+      });
       navigate(`/watch/${id}?rate=1`, { replace: true });
     } catch (err) {
       setError(errorMessage(err));
@@ -116,6 +122,14 @@ export function AddWatch() {
           spellCheck={false}
           onChange={(e) => setReference(e.target.value)}
           hint="Leave blank if you’re not sure. You can rate the model in general."
+        />
+        <Field
+          label="Nickname (optional)"
+          value={nickname}
+          maxLength={80}
+          autoCapitalize="words"
+          onChange={(e) => setNickname(e.target.value)}
+          hint="What collectors call it, like Batman or Hulk. Makes it easier to find."
         />
         {existing.data?.id && (
           <p role="status" className="rounded-xl bg-accent-soft px-3 py-2 text-sm">
