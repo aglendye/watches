@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { InstallBanner } from '../components/Banners';
-import { DialFace } from '../components/Dial';
-import { Button, Field, FormError } from '../components/ui';
+import { Button, Field, FormError, Wordmark } from '../components/ui';
 import { call, errorMessage } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
@@ -71,17 +70,16 @@ export function Auth() {
   return (
     <div className="space-y-6">
       <InstallBanner />
-      <header className="flex items-center gap-3">
-        <div className="w-14">
-          <DialFace hand={8} centerText="" showNumbers={false} />
-        </div>
+      <header className="pt-6">
         <div>
-          <h1 className="display text-4xl tracking-[0.22em] uppercase">Bezel</h1>
-          <p className="text-muted">Rate watches. Keep a diary. Compare notes.</p>
+          <h1 aria-label="Bezel">
+            <Wordmark size="text-[3.5rem]" />
+          </h1>
+          <p className="mt-2 text-muted">Rate watches. Keep a diary. Compare notes.</p>
         </div>
       </header>
 
-      <div role="tablist" aria-label="Account" className="grid grid-cols-2 rounded-xl bg-surface-2 p-1">
+      <div role="tablist" aria-label="Account" className="grid grid-cols-2 border border-line">
         {(['signIn', 'signUp'] as const).map((m) => (
           <button
             key={m}
@@ -89,7 +87,7 @@ export function Auth() {
             type="button"
             aria-selected={mode === m}
             onClick={() => switchTo(m)}
-            className={`min-h-11 rounded-lg font-semibold ${mode === m ? 'bg-surface shadow-sm' : 'text-muted'}`}
+            className={`display min-h-12 text-lg tracking-[0.06em] ${mode === m ? 'bg-accent text-on-accent' : 'text-muted'}`}
           >
             {m === 'signIn' ? 'Sign in' : 'Create account'}
           </button>

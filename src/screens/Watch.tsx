@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import type { CommunityRating, RatingEntry, WatchDetail } from '../../shared/types';
-import { DialReadOnly } from '../components/DialReadOnly';
 import { WatchArt, WatchImage } from '../components/WatchArt';
 import { RatingSheet } from '../components/RatingSheet';
 import { Sheet } from '../components/Sheet';
-import { Button, Card, EmptyState, ErrorState, ScoreBadge, SectionTitle, SkeletonRows } from '../components/ui';
+import { Button, EmptyState, ErrorState, ScoreBadge, SectionTitle, SkeletonRows } from '../components/ui';
 import { errorMessage } from '../lib/api';
 import { useMe } from '../lib/auth';
 import { formatDate, localToday, plural, watchTitle } from '../lib/format';
@@ -62,87 +61,79 @@ export function Watch() {
   const mine = ratings.data?.find((r) => r.user_id === me.id) ?? null;
   const specs = specRows(w);
 
+  const nickname = typeof w.extras?.nickname === 'string' && w.extras.nickname ? w.extras.nickname : null;
+
   return (
-    <article className="space-y-6">
+    <article className="space-y-5">
       <header className="space-y-4">
-        <Link to="/" className="inline-flex min-h-11 items-center font-medium text-accent">
-          ‹ Home
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link to="/" className="inline-flex min-h-11 items-center font-semibold text-accent">
+            ‹ Home
+          </Link>
+          <Link to={`/watch/${w.watch_id}/edit`} className="inline-flex min-h-11 items-center font-semibold text-muted">
+            Edit details
+          </Link>
+        </div>
         {/* The uploaded photo when there is one (Phase 2), otherwise a drawing from the watch's data */}
-        <div className="grid aspect-[16/9] place-items-center overflow-hidden hero rounded-card border border-line">
+        <div className="hero relative grid h-64 place-items-center overflow-hidden border border-line">
           {w.primary_image_url ? (
             <WatchImage watch={w} photoUrl={w.primary_image_url} className="h-full w-full" />
           ) : (
-            <WatchArt watch={w} className="h-[88%] w-auto" />
+            <>
+              <WatchArt watch={w} className="h-[84%] w-auto" />
+              <p className="label absolute bottom-2.5 left-3 !text-[0.625rem]">Drawn from specs</p>
+            </>
           )}
         </div>
         <div>
           <p className="label">{w.brand_name}</p>
-          <h1 className="display text-4xl">{w.model_name}</h1>
-          <p className={`mt-1 ${t.hasReference ? 'tabular' : 'text-muted italic'}`}>{t.subtitle}</p>
-          {typeof w.extras?.nickname === 'string' && w.extras.nickname && (
-            <p className="mt-1 text-lg font-medium text-gold">“{w.extras.nickname}”</p>
-          )}
+          <h1 className="display mt-1 text-[2.5rem]">{w.model_name}</h1>
+          <p className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            {nickname && <span className="font-semibold text-accent">“{nickname}”</span>}
+            <span className={t.hasReference ? 'mono text-sm text-muted' : 'text-sm text-muted italic'}>
+              {t.hasReference ? w.reference : 'reference not specified'}
+            </span>
+          </p>
         </div>
       </header>
 
-      <Card className="flex items-center gap-4 p-4">
-        <DialReadOnly avg={w.avg_score} className="w-32" watch={w} />
+      <section aria-label="Community score" className="flex items-end justify-between gap-4 border-y border-line py-4">
         <div>
           <p className="label">Community score</p>
-          {w.rating_count === 0 ? (
-            <p className="mt-1 text-lg font-semibold">No ratings yet</p>
-          ) : (
-            <p className="tabular mt-1 text-lg">
-              <span className="serif text-3xl">{w.avg_score?.toFixed(1)}</span> from{' '}
-              {plural(w.rating_count, 'person', 'people')}
-            </p>
-          )}
-          {mine && (
-            <p className="mt-1 text-sm text-muted">
-              You: {mine.score}/10 on {formatDate(mine.rated_on, { short: true })}
-            </p>
-          )}
+          <p className="mt-1.5 text-sm text-muted">
+            {w.rating_count === 0 ? 'No ratings yet' : plural(w.rating_count, 'rating')}
+            {mine && <> · yours: {mine.score}</>}
+          </p>
         </div>
-      </Card>
+        <p className="flex items-baseline gap-1">
+          <span className="num text-[4rem] text-accent">{w.avg_score === null ? '–' : w.avg_score.toFixed(1)}</span>
+          <span className="mono text-sm text-muted">/10</span>
+        </p>
+      </section>
 
       <section aria-labelledby="specs-title">
-        <details open className="group">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between">
-            <SectionTitle id="specs-title">Specs</SectionTitle>
-            <span className="text-sm text-muted group-open:rotate-180" aria-hidden="true">
-              ▾
-            </span>
-          </summary>
-          <Card className="px-4">
-            {specs.length === 0 ? (
-              <p className="py-4 text-muted">No specs yet. Anyone can add them.</p>
-            ) : (
-              <dl className="divide-y divide-line">
-                {specs.map(([k, v]) => (
-                  <div key={k} className="flex justify-between gap-4 py-3">
-                    <dt className="text-muted">{k}</dt>
-                    <dd className="text-right font-medium">{v}</dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-          </Card>
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <p className="text-xs text-muted">
-              Added by {w.created_by === me.id ? 'you' : w.created_by_name}
-              {w.updated_at && (
-                <>
-                  {' '}
-                  · edited by {w.updated_by_name ?? 'someone'} {formatDate(localToday(new Date(w.updated_at)), { short: true })}
-                </>
-              )}
-            </p>
-            <Link to={`/watch/${w.watch_id}/edit`} className="inline-flex min-h-11 shrink-0 items-center font-medium text-accent">
-              Edit details
-            </Link>
-          </div>
-        </details>
+        <SectionTitle id="specs-title">Specs</SectionTitle>
+        {specs.length === 0 ? (
+          <p className="border-y border-line py-4 text-muted">No specs yet. Anyone can add them.</p>
+        ) : (
+          <dl className="grid grid-cols-2 gap-x-4 border-t border-line">
+            {specs.map(([k, v]) => (
+              <div key={k} className="min-w-0 border-b border-line py-2.5">
+                <dt className="label !text-[0.625rem]">{k}</dt>
+                <dd className="mt-1 text-[0.9375rem] font-medium break-words">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        <p className="mt-2 text-xs text-muted">
+          Added by {w.created_by === me.id ? 'you' : w.created_by_name}
+          {w.updated_at && (
+            <>
+              {' '}
+              · edited by {w.updated_by_name ?? 'someone'} {formatDate(localToday(new Date(w.updated_at)), { short: true })}
+            </>
+          )}
+        </p>
       </section>
 
       <section aria-labelledby="ratings-title">
@@ -154,24 +145,24 @@ export function Watch() {
         ) : ratings.data.length === 0 ? (
           <EmptyState title="Nobody has rated this yet. Be the first." />
         ) : (
-          <ul className="space-y-2">
+          <ul className="border-t border-line">
             {ratings.data.map((r) => (
               <li key={r.id}>
                 <button
                   type="button"
                   onClick={() => setPerson(r)}
-                  className="flex w-full items-start gap-3 rounded-card border border-line bg-surface p-3 text-left"
+                  className="flex w-full items-start gap-3 border-b border-line py-3 text-left"
                   aria-label={`${r.user_id === me.id ? 'You' : r.display_name}: ${r.score} out of 10. Show all entries`}
                 >
                   <ScoreBadge score={r.score} />
                   <div className="min-w-0 flex-1">
                     <p className="flex flex-wrap items-baseline justify-between gap-x-2">
                       <span className="font-semibold">{r.user_id === me.id ? 'You' : r.display_name}</span>
-                      <span className="text-sm text-muted">{formatDate(r.rated_on, { short: true })}</span>
+                      <span className="mono text-xs text-muted">{formatDate(r.rated_on, { short: true })}</span>
                     </p>
-                    {r.review_text && <p className="mt-1 whitespace-pre-line">{r.review_text}</p>}
+                    {r.review_text && <p className="mt-1 whitespace-pre-line text-[0.9375rem]">{r.review_text}</p>}
                     {r.entry_count > 1 && (
-                      <p className="mt-1 text-sm text-accent">{plural(r.entry_count, 'entry', 'entries')}</p>
+                      <p className="mt-1 text-sm font-semibold text-accent">{plural(r.entry_count, 'entry', 'entries')}</p>
                     )}
                   </div>
                 </button>
@@ -181,15 +172,15 @@ export function Watch() {
         )}
       </section>
 
-      {/* Sticky Rate button above the tab bar */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-20 px-4 pb-3">
+      {/* Rate bar pinned above the tab bar */}
+      <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-20 border-t border-line bg-bg px-4 py-3">
         <div className="mx-auto max-w-2xl">
-          <Button className="pointer-events-auto w-full shadow-lg" onClick={() => setRating({ open: true, entry: null })}>
-            {mine ? 'Rate again' : 'Rate'}
+          <Button className="w-full" onClick={() => setRating({ open: true, entry: null })}>
+            {mine ? 'Rate again' : 'Rate this watch'}
           </Button>
         </div>
       </div>
-      <div className="h-16" aria-hidden="true" />
+      <div className="h-20" aria-hidden="true" />
 
       <RatingSheet
         open={rating.open}
@@ -240,7 +231,7 @@ function PersonEntries({
             <li key={e.id} className="flex items-start gap-3 py-3">
               <ScoreBadge score={e.score} />
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-muted">{formatDate(e.rated_on)}</p>
+                <p className="mono text-xs text-muted">{formatDate(e.rated_on)}</p>
                 {e.review_text && <p className="mt-1 whitespace-pre-line">{e.review_text}</p>}
               </div>
               {isMe && (

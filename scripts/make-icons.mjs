@@ -14,16 +14,16 @@ function dial({ size, padding }) {
     const r1 = r * 0.78;
     const r2 = r * (i === 0 ? 0.6 : 0.68);
     return `<line x1="${c + r1 * Math.sin(a)}" y1="${c - r1 * Math.cos(a)}" x2="${c + r2 * Math.sin(a)}" y2="${c - r2 * Math.cos(a)}"
-      stroke="#f3efe4" stroke-width="${size * (i === 0 ? 0.035 : 0.022)}" stroke-linecap="round"/>`;
+      stroke="#eef0ee" stroke-width="${size * (i === 0 ? 0.035 : 0.022)}" stroke-linecap="round"/>`;
   }).join('');
   const handA = (8 * 36 * Math.PI) / 180;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-    <rect width="${size}" height="${size}" fill="#006039"/>
-    <circle cx="${c}" cy="${c}" r="${r}" fill="#004a2c" stroke="#d2ad5c" stroke-width="${size * 0.02}"/>
+    <rect width="${size}" height="${size}" fill="#131517"/>
+    <circle cx="${c}" cy="${c}" r="${r}" fill="#1b1e21" stroke="#ff6a2b" stroke-width="${size * 0.02}"/>
     ${ticks}
     <line x1="${c}" y1="${c}" x2="${c + r * 0.55 * Math.sin(handA)}" y2="${c - r * 0.55 * Math.cos(handA)}"
-      stroke="#d2ad5c" stroke-width="${size * 0.03}" stroke-linecap="round"/>
-    <circle cx="${c}" cy="${c}" r="${size * 0.035}" fill="#d2ad5c"/>
+      stroke="#ff6a2b" stroke-width="${size * 0.03}" stroke-linecap="round"/>
+    <circle cx="${c}" cy="${c}" r="${size * 0.035}" fill="#ff6a2b"/>
   </svg>`;
 }
 

@@ -57,10 +57,11 @@ describe('rating sheet validation', () => {
     const onClose = vi.fn();
     wrap(<RatingSheet open onClose={onClose} watchId="w1" watchTitle="Omega Speedmaster" latest={{ score: 7, rated_on: '2026-03-01' }} />);
     expect(screen.getByText(/Your latest:/)).toHaveTextContent('7/10 on Mar 1');
-    const save = screen.getByRole('button', { name: 'Save' });
+    const save = screen.getByRole('button', { name: /^Save rating/ });
     expect(save).toBeDisabled();
     await userEvent.click(screen.getByRole('radio', { name: 'Score 8 of 10' }));
     expect(save).toBeEnabled();
+    expect(save).toHaveTextContent('Save rating · 8');
     expect(screen.getByLabelText('Date rated')).toHaveAttribute('max');
     await userEvent.click(save);
     await waitFor(() => expect(onClose).toHaveBeenCalled());

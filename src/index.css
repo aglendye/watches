@@ -1,60 +1,35 @@
 @import 'tailwindcss';
 
-/* Design tokens in Rolex's house colours: Rolex green, gold and cream, with a
-   serif display face (Cormorant Garamond) and small tracked capitals.
-   No logos or brand marks. Light and dark follow the system setting. */
+/* "Tool Watch" design: graphite, dive-watch orange, square corners, bold
+   condensed capitals (Big Shoulders Display), mono labels (IBM Plex Mono),
+   Inter for reading. One dark look on every phone, whatever its setting. */
 :root {
-  --bg: #f4efea;
-  --surface: #ffffff;
-  --surface-2: #ebe4da;
-  --text: #212121;
-  --muted: #66625a;
-  --accent: #006039;
-  --accent-text: #ffffff;
-  --accent-soft: #dde9e2;
-  --gold: #8a6a22;
-  --danger: #b3261e;
-  --border: #ddd3c4;
-  --dial-face: #fbf9f4;
-  --dial-ink: #1f2a24;
-  --dial-hand: #006039;
-  --hero-1: #ffffff;
-  --hero-2: #e6ddcd;
-  --bar: #006039;
-  --bar-text: #e8f0ea;
-  --bar-active: #e6c87a;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #03170e;
-    --surface: #062619;
-    --surface-2: #0b3222;
-    --text: #f4efea;
-    --muted: #a8bdb1;
-    --accent: #d2ad5c;
-    --accent-text: #1a1408;
-    --accent-soft: #2d2814;
-    --gold: #d2ad5c;
-    --danger: #ff8a80;
-    --border: #154832;
-    --dial-face: #0b3222;
-    --dial-ink: #f4efea;
-    --dial-hand: #d2ad5c;
-    --hero-1: #127749;
-    --hero-2: #03170e;
-    --bar: #021109;
-    --bar-text: #a8bdb1;
-    --bar-active: #d2ad5c;
-    color-scheme: dark;
-  }
+  --bg: #131517;
+  --surface: #1b1e21;
+  --surface-2: #24282c;
+  --tile: #191c1f;
+  --text: #eef0ee;
+  --muted: #9ca2a4;
+  --accent: #ff6a2b;
+  --accent-text: #131517;
+  --accent-soft: #3a2216;
+  --gold: #ff6a2b;
+  --danger: #ff8f8f;
+  --border: #2c3236;
+  --dial-face: #1b1e21;
+  --dial-ink: #eef0ee;
+  --dial-hand: #ff6a2b;
+  --bar: #0e1011;
+  --bar-text: #8a9093;
+  --bar-active: #ff6a2b;
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-tile: var(--tile);
   --color-ink: var(--text);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
@@ -66,9 +41,21 @@
   --color-bar: var(--bar);
   --color-bar-text: var(--bar-text);
   --color-bar-active: var(--bar-active);
-  --font-serif: 'Cormorant Garamond', 'Iowan Old Style', 'Palatino', Georgia, serif;
-  --radius-card: 0.75rem;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-display: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --radius-card: 0;
+}
+
+/* Square corners everywhere; only true circles (rounded-full) stay round. */
+@theme {
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
 }
 
 html {
@@ -113,33 +100,40 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Small caps-style labels for the spec-sheet look. */
+/* Mono capitals for labels, like engraving on a caseback. */
 .label {
-  font-size: 0.75rem;
-  letter-spacing: 0.14em;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--gold);
-  font-weight: 600;
-}
-
-/* Large, light headings. */
-.display {
-  font-family: var(--font-serif);
+  color: var(--muted);
   font-weight: 500;
-  letter-spacing: 0.005em;
-  line-height: 1.1;
 }
 
-/* Serif for watch names and titles. */
-.serif {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  letter-spacing: 0.005em;
+/* Bold condensed capitals for headings and watch names. */
+.display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1;
 }
 
-/* Spotlight behind the watch picture. */
+/* Big numbers: scores and averages. */
+.num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.9;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Flat panel behind watch pictures. */
 .hero {
-  background: radial-gradient(ellipse at 50% 38%, var(--hero-1) 0%, var(--hero-2) 78%);
+  background: var(--tile);
 }
 
 .dial-hand {
@@ -159,7 +153,6 @@ body {
 /* Skeleton shimmer (static under reduced motion). */
 .skeleton {
   background: var(--surface-2);
-  border-radius: 0.5rem;
 }
 
 .scrollbar-none {

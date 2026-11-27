@@ -31,6 +31,17 @@ Adam asked for 500 to 1,000 seeded watches from brands like Rolex, Omega, Breitl
 - Nicknames are shown on their own line (accent colour) in search results, Recently added cards and the watch page.
 - The installed app checks for a new version whenever it returns to the foreground and reloads once if the deployed bundle has changed (`src/lib/update.ts`).
 
+### "Tool Watch" redesign (Adam, Nov 27)
+
+Adam asked for a UI with the personality of his deepcuts app (flat, editorial, bold type, one accent, big scores) without copying it. Three directions were mocked on a design canvas; he chose C, "Tool Watch", and asked for the app to be completely like it. This replaces the Rolex green/gold look.
+
+- **One dark look on every phone** (no light mode): graphite #131517 ground, #1b1e21 panels, #191c1f picture tiles, hairline #2c3236 borders, dive-watch orange #ff6a2b as the only accent (6.9:1 on the ground; text on orange is graphite).
+- **Type:** Big Shoulders Display (bold condensed capitals) for headings, watch names, buttons and big scores; IBM Plex Mono capitals for labels, references and dates; Inter for reading text. All bundled with the app (open font licence), no outside requests; text still follows iPhone text size.
+- **Shapes:** square corners everywhere (radius tokens set to 0), flat panels, no shadows. Lists are ruled rows rather than cards.
+- **Signature:** the orange triangle from a dive bezel's 12 o'clock marks section labels and the "▼ BEZEL" wordmark (deepcuts' "name + dot" wordmark, mustard and all-lowercase style were deliberately not used).
+- **Screens:** Home has the wordmark and a profile button above the search box; feed rows show the watch drawing, "You rated the Batman", and the score as a big orange number. The watch page shows the drawing on a flat tile ("Drawn from specs"), the score as a large number out of 10 (the small community-score dial was dropped to match the design), specs in a two-column ruled grid, and a pinned "Rate this watch" bar. The rating sheet has a "Your rating" label, the watch name in condensed capitals with the nickname in orange, the watch's own dial with an orange hand, and one "Save rating · 8" button (close with ×).
+- Feed items now carry the fields the drawing needs (case material, dial colour, extras).
+
 ### Name: Bezel (Adam, Nov 26)
 
 The app is called Bezel: browser tab, Home Screen label and install name, sign-in wordmark (serif capitals) and README. The repo, Vercel project and URL are unchanged.

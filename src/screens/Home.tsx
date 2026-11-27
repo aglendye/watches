@@ -16,7 +16,7 @@ export function Home() {
       <EmptyState
         title="Nothing here yet. Search for a watch and add the first one."
         action={
-          <Link to="/add" className="inline-flex min-h-11 items-center rounded-xl bg-accent px-4 font-semibold text-on-accent">
+          <Link to="/add" className="display inline-flex min-h-12 items-center bg-accent px-5 text-lg tracking-[0.06em] text-on-accent">
             Add a watch
           </Link>
         }
@@ -25,13 +25,13 @@ export function Home() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7 pt-2">
       <section aria-labelledby="recent-title">
         <SectionTitle id="recent-title">Recently added</SectionTitle>
         {recent.isPending ? (
           <div className="flex gap-3 overflow-hidden" role="status" aria-label="Loading">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="skeleton h-48 w-40 shrink-0" />
+              <div key={i} className="skeleton h-52 w-[9.5rem] shrink-0" />
             ))}
           </div>
         ) : recent.isError ? (
@@ -56,7 +56,7 @@ export function Home() {
         ) : feed.data.length === 0 ? (
           <EmptyState title="No activity yet. Rate a watch to get things started." />
         ) : (
-          <ul className="divide-y divide-line">
+          <ul className="border-t border-line">
             {feed.data.map((item) => (
               <FeedItem key={`${item.kind}-${item.id}`} item={item} meId={me.id} />
             ))}

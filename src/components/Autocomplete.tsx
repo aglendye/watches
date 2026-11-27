@@ -47,9 +47,9 @@ export function Autocomplete({ label, value, onChange, suggestions, hint, requir
 
   return (
     <div className="relative">
-      <label htmlFor={id} className="mb-1 block text-sm font-medium">
+      <label htmlFor={id} className="label mb-1.5 block">
         {label}
-        {!required && <span className="font-normal text-muted"> (optional)</span>}
+        {!required && <span> (optional)</span>}
       </label>
       <input
         id={id}
@@ -75,7 +75,7 @@ export function Autocomplete({ label, value, onChange, suggestions, hint, requir
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         onKeyDown={onKey}
-        className="min-h-11 w-full rounded-xl border border-line bg-surface px-3 text-base text-ink"
+        className="min-h-12 w-full border border-line bg-surface px-3 text-base text-ink"
       />
       {hint && (
         <p id={`${id}-hint`} className="mt-1 text-sm text-muted">
@@ -87,7 +87,7 @@ export function Autocomplete({ label, value, onChange, suggestions, hint, requir
         role="listbox"
         aria-label={`${label} suggestions`}
         hidden={!expanded}
-        className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-line bg-surface shadow-lg"
+        className="absolute inset-x-0 top-full z-20 -mt-px overflow-hidden border border-accent bg-surface"
       >
         {items.map((s, i) => (
           <li

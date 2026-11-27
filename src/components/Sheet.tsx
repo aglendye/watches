@@ -7,14 +7,16 @@ const FOCUSABLE =
 interface Props {
   open: boolean;
   onClose(): void;
-  title: string;
+  title: ReactNode;
+  /** Small label above the title. */
+  eyebrow?: string;
   children: ReactNode;
   /** 'bottom' slides up from the bottom (sheets); 'center' is a dialog. */
   variant?: 'bottom' | 'center';
 }
 
 /** Modal sheet or dialog: traps focus, closes on Escape and backdrop tap, restores focus. */
-export function Sheet({ open, onClose, title, children, variant = 'bottom' }: Props) {
+export function Sheet({ open, onClose, title, eyebrow, children, variant = 'bottom' }: Props) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
@@ -67,21 +69,24 @@ export function Sheet({ open, onClose, title, children, variant = 'bottom' }: Pr
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`relative max-h-[92dvh] w-full overflow-y-auto bg-surface text-ink shadow-xl outline-none ${
+        className={`relative max-h-[92dvh] w-full overflow-y-auto border-t border-line bg-surface text-ink outline-none ${
           bottom
-            ? 'max-w-lg rounded-t-2xl px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]'
-            : 'max-w-sm rounded-2xl p-5'
+            ? 'max-w-lg px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]'
+            : 'max-w-sm border p-5'
         }`}
       >
-        {bottom && <div className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-line" aria-hidden="true" />}
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 id={titleId} className="serif text-2xl">
-            {title}
-          </h2>
+        {bottom && <div className="mx-auto mb-3 h-1 w-10 bg-line" aria-hidden="true" />}
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            {eyebrow && <p className="label mb-1.5">{eyebrow}</p>}
+            <h2 id={titleId} className="display text-[1.75rem] leading-[1.05]">
+              {title}
+            </h2>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="-mr-2 grid size-11 place-items-center rounded-full text-muted"
+            className="-mt-1 -mr-2 grid size-11 shrink-0 place-items-center text-muted"
             aria-label="Close"
           >
             <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">

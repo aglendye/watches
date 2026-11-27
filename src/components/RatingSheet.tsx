@@ -55,6 +55,7 @@ export function RatingSheet({ open, onClose, watchId, watchTitle, watch, latest,
   }, [open, entry]);
 
   const today = localToday();
+  const nickname = typeof watch?.extras?.nickname === 'string' && watch.extras.nickname ? watch.extras.nickname : null;
   const busy = create.isPending || update.isPending;
 
   async function save(e: FormEvent) {
@@ -91,19 +92,28 @@ export function RatingSheet({ open, onClose, watchId, watchTitle, watch, latest,
 
   return (
     <>
-      <Sheet open={open && !confirming} onClose={onClose} title={entry ? 'Edit entry' : 'Rate this watch'}>
+      <Sheet
+        open={open && !confirming}
+        onClose={onClose}
+        eyebrow={entry ? 'Edit entry' : 'Your rating'}
+        title={
+          <>
+            {watchTitle}
+            {nickname && <span className="text-accent"> “{nickname}”</span>}
+          </>
+        }
+      >
         <form onSubmit={save} noValidate className="space-y-4">
-          <p className="-mt-2 text-muted">{watchTitle}</p>
           {!entry && latest && (
-            <p className="tabular rounded-xl bg-surface-2 px-3 py-2 text-sm">
+            <p className="tabular border border-line px-3 py-2 text-sm">
               Your latest: <span className="font-semibold">{latest.score}/10</span> on{' '}
               {formatDate(latest.rated_on, { short: true })}
             </p>
           )}
           <Dial value={score} onChange={setScore} watch={watch} />
           <div>
-            <label htmlFor={reviewId} className="mb-1 block text-sm font-medium">
-              Review <span className="font-normal text-muted">(optional)</span>
+            <label htmlFor={reviewId} className="label mb-1.5 block">
+              Review (optional)
             </label>
             <textarea
               id={reviewId}
@@ -111,7 +121,7 @@ export function RatingSheet({ open, onClose, watchId, watchTitle, watch, latest,
               maxLength={MAX_REVIEW}
               value={review}
               onChange={(e) => setReview(e.target.value)}
-              className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-base text-ink"
+              className="w-full border border-line bg-bg px-3 py-2 text-base text-ink"
               aria-describedby={`${reviewId}-count`}
             />
             {review.length > MAX_REVIEW - 500 && (
@@ -121,7 +131,7 @@ export function RatingSheet({ open, onClose, watchId, watchTitle, watch, latest,
             )}
           </div>
           <div>
-            <label htmlFor={dateId} className="mb-1 block text-sm font-medium">
+            <label htmlFor={dateId} className="label mb-1.5 block">
               Date rated
             </label>
             <input
@@ -130,7 +140,7 @@ export function RatingSheet({ open, onClose, watchId, watchTitle, watch, latest,
               max={today}
               value={ratedOn}
               onChange={(e) => setRatedOn(e.target.value)}
-              className="min-h-11 w-full rounded-xl border border-line bg-surface px-3 text-base text-ink"
+              className="min-h-12 w-full border border-line bg-bg px-3 text-base text-ink"
             />
           </div>
           <FormError message={error} />
@@ -143,11 +153,8 @@ export function RatingSheet({ open, onClose, watchId, watchTitle, watch, latest,
                 Delete
               </Button>
             )}
-            <Button kind="secondary" className="ml-auto" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" busy={busy} disabled={score === null}>
-              Save
+            <Button type="submit" className="flex-1" busy={busy} disabled={score === null}>
+              {entry ? 'Save changes' : score === null ? 'Save rating' : `Save rating · ${score}`}
             </Button>
           </div>
         </form>

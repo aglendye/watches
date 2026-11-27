@@ -89,7 +89,7 @@ export function AddWatch() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="display text-4xl">Add a watch</h1>
+        <h1 className="display text-[2.75rem]">Add a watch</h1>
         <p className="mt-1 text-muted">
           Tip: <Link to="/search" className="font-medium text-accent">search</Link> first. If it’s already here,
           just rate it.
@@ -132,7 +132,7 @@ export function AddWatch() {
           hint="What collectors call it, like Batman or Hulk. Makes it easier to find."
         />
         {existing.data?.id && (
-          <p role="status" className="rounded-xl bg-accent-soft px-3 py-2 text-sm">
+          <p role="status" className="border border-accent bg-accent-soft px-3 py-2 text-sm">
             This watch is already in the catalog.{' '}
             <Link to={`/watch/${existing.data.id}?rate=1`} className="font-semibold text-accent underline">
               Open it

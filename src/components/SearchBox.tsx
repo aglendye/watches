@@ -34,10 +34,10 @@ export const SearchBox = forwardRef<HTMLInputElement, Props>(function SearchBox(
         autoCorrect="off"
         spellCheck={false}
         autoFocus={autoFocus}
-        placeholder="Search brand, model, or reference"
+        placeholder="Search brand, model, nickname"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="min-h-12 w-full rounded-xl border border-line bg-surface pr-3 pl-10 text-base text-ink placeholder:text-muted"
+        className="min-h-12 w-full border border-line bg-surface pr-3 pl-10 text-base text-ink placeholder:text-muted"
       />
     </form>
   );

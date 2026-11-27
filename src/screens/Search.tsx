@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { SearchBox } from '../components/SearchBox';
 import { WatchRow } from '../components/WatchItems';
-import { EmptyState, ErrorState, SkeletonRows } from '../components/ui';
+import { EmptyState, ErrorState, SkeletonRows, Wordmark } from '../components/ui';
+import { useMe } from '../lib/auth';
 import { errorMessage } from '../lib/api';
 import { useSearch } from '../lib/queries';
 
@@ -16,6 +17,7 @@ export function SearchLayout() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const onResults = location.pathname === '/search';
+  const me = useMe();
   const urlQ = onResults ? params.get('q') ?? '' : '';
   const [value, setValue] = useState(urlQ);
   const lastPushed = useRef(urlQ);
@@ -47,6 +49,18 @@ export function SearchLayout() {
     <div>
       <div className="sticky top-0 z-20 -mx-4 bg-bg/95 px-4 pt-[env(safe-area-inset-top)] pb-3 backdrop-blur">
         <h1 className="sr-only">{onResults ? 'Search results' : 'Home'}</h1>
+        {!onResults && (
+          <div className="flex h-12 items-center justify-between">
+            <Wordmark />
+            <Link
+              to="/me"
+              aria-label="Your profile"
+              className="grid size-10 place-items-center border border-line text-sm font-semibold"
+            >
+              {(me.displayName || '?').slice(0, 1).toUpperCase()}
+            </Link>
+          </div>
+        )}
         <SearchBox value={value} onChange={setValue} onSubmit={(v) => go(v, true)} />
       </div>
       <Outlet />
@@ -63,7 +77,7 @@ export function Search() {
   const addLink = (
     <Link
       to={`/add?q=${encodeURIComponent(trimmed)}`}
-      className="flex min-h-12 items-center justify-center rounded-xl border border-dashed border-accent px-4 font-semibold text-accent"
+      className="flex min-h-12 items-center justify-center border border-dashed border-accent px-4 font-semibold text-accent"
     >
       Can’t find it? Add it
     </Link>
@@ -74,7 +88,7 @@ export function Search() {
   }
 
   return (
-    <section aria-label="Results" className="space-y-3">
+    <section aria-label="Results" className="space-y-4">
       {addLink}
       {search.isPending ? (
         <SkeletonRows label="Searching" />
@@ -87,7 +101,7 @@ export function Search() {
           <p className="sr-only" role="status">
             {search.data.length} results
           </p>
-          <ul className="space-y-2">
+          <ul className="border-t border-line">
             {search.data.map((w) => (
               <li key={w.watch_id}>
                 <WatchRow w={w} />

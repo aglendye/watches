@@ -112,10 +112,10 @@ function EditForm({ w }: { w: WatchDetail }) {
 
   return (
     <div className="space-y-5">
-      <Link to={`/watch/${w.watch_id}`} className="inline-flex min-h-11 items-center font-medium text-accent">
+      <Link to={`/watch/${w.watch_id}`} className="inline-flex min-h-11 items-center font-semibold text-accent">
         ‹ Back
       </Link>
-      <h1 className="display text-4xl">Edit details</h1>
+      <h1 className="display text-[2.75rem]">Edit details</h1>
       <form onSubmit={save} noValidate className="space-y-6">
         <fieldset className="space-y-3">
           <legend className="label mb-2">Identity</legend>
@@ -151,14 +151,14 @@ function EditForm({ w }: { w: WatchDetail }) {
             <Field label="Water resistance (m)" inputMode="numeric" value={form.water_resistance_m} onChange={set('water_resistance_m')} />
           </div>
           <div>
-            <label htmlFor={movementId} className="mb-1 block text-sm font-medium">
+            <label htmlFor={movementId} className="label mb-1.5 block">
               Movement
             </label>
             <select
               id={movementId}
               value={form.movement_type}
               onChange={set('movement_type')}
-              className="min-h-11 w-full rounded-xl border border-line bg-surface px-3 text-base text-ink"
+              className="min-h-12 w-full border border-line bg-surface px-3 text-base text-ink"
             >
               <option value="">Not specified</option>
               <option value="automatic">Automatic</option>

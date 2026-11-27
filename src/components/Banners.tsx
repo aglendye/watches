@@ -5,7 +5,7 @@ export function InstallBanner() {
   const [show] = useState(shouldShowInstallBanner);
   if (!show) return null;
   return (
-    <div role="note" className="rounded-card border border-accent bg-accent-soft px-4 py-3 text-sm text-ink">
+    <div role="note" className="border border-accent bg-accent-soft px-4 py-3 text-sm text-ink">
       <p className="font-semibold">Install first</p>
       <p className="mt-1">
         Tap <span className="font-semibold">Share</span>

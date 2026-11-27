@@ -30,8 +30,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             role={t.kind === 'error' ? 'alert' : 'status'}
-            className={`pointer-events-auto max-w-md rounded-xl px-4 py-3 text-sm font-medium shadow-lg ${
-              t.kind === 'error' ? 'bg-danger text-white' : 'bg-ink text-bg'
+            className={`pointer-events-auto max-w-md px-4 py-3 text-sm font-semibold ${
+              t.kind === 'error' ? 'bg-danger text-bg' : 'bg-accent text-on-accent'
             }`}
           >
             {t.text}

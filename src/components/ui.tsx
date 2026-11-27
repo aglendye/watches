@@ -4,10 +4,10 @@ import { useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactN
 type ButtonKind = 'primary' | 'secondary' | 'danger' | 'ghost';
 
 const KIND: Record<ButtonKind, string> = {
-  primary: 'bg-accent text-on-accent',
-  secondary: 'bg-surface-2 text-ink',
-  danger: 'bg-transparent text-danger border border-current',
-  ghost: 'bg-transparent text-accent',
+  primary: 'bg-accent text-on-accent font-display text-lg font-extrabold uppercase tracking-[0.06em]',
+  secondary: 'border border-line bg-transparent text-ink font-display text-lg font-extrabold uppercase tracking-[0.06em]',
+  danger: 'border border-current bg-transparent text-danger font-display text-lg font-extrabold uppercase tracking-[0.06em]',
+  ghost: 'bg-transparent text-accent font-semibold',
 };
 
 export function Button({
@@ -23,7 +23,7 @@ export function Button({
       {...rest}
       disabled={rest.disabled || busy}
       aria-busy={busy || undefined}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 font-semibold tracking-wide transition-opacity disabled:opacity-45 ${KIND[kind]} ${className}`}
+      className={`inline-flex min-h-12 items-center justify-center gap-2 px-5 transition-opacity disabled:opacity-45 ${KIND[kind]} ${className}`}
     >
       {children}
     </button>
@@ -41,7 +41,7 @@ export function Field({
   const hintId = `${id}-hint`;
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1 block text-sm font-medium">
+      <label htmlFor={id} className="label mb-1.5 block">
         {label}
       </label>
       <input
@@ -49,7 +49,7 @@ export function Field({
         aria-describedby={hint || error ? hintId : undefined}
         aria-invalid={error ? true : undefined}
         {...rest}
-        className="min-h-11 w-full rounded-xl border border-line bg-surface px-3 text-base text-ink placeholder:text-muted disabled:opacity-60"
+        className="min-h-12 w-full border border-line bg-surface px-3 text-base text-ink placeholder:text-muted disabled:opacity-60"
       />
       {(hint || error) && (
         <p id={hintId} className={`mt-1 text-sm ${error ? 'text-danger' : 'text-muted'}`}>
@@ -63,7 +63,7 @@ export function Field({
 export function FormError({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p role="alert" className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">
+    <p role="alert" className="border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
       {message}
     </p>
   );
@@ -102,7 +102,7 @@ export function SkeletonRows({ rows = 4, label = 'Loading' }: { rows?: number; l
 export function ScoreBadge({ score, className = '' }: { score: number; className?: string }) {
   return (
     <span
-      className={`tabular inline-grid size-10 shrink-0 place-items-center rounded-full border-2 border-accent text-sm font-bold text-accent ${className}`}
+      className={`num inline-block w-9 shrink-0 text-center text-3xl text-accent ${className}`}
       aria-label={`${score} out of 10`}
     >
       {score}
@@ -112,7 +112,8 @@ export function ScoreBadge({ score, className = '' }: { score: number; className
 
 export function SectionTitle({ children, id }: { children: ReactNode; id?: string }) {
   return (
-    <h2 id={id} className="label mb-2">
+    <h2 id={id} className="label mb-3 flex items-center gap-2">
+      <DivePip />
       {children}
     </h2>
   );
@@ -120,4 +121,23 @@ export function SectionTitle({ children, id }: { children: ReactNode; id?: strin
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={`rounded-card border border-line bg-surface ${className}`}>{children}</div>;
+}
+
+/** The small orange triangle from a dive bezel's 12 o'clock: the app's marker. */
+export function DivePip({ className = 'h-2 w-2.5' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 10 8" className={`shrink-0 ${className}`} aria-hidden="true">
+      <path d="M0 0H10L5 8Z" fill="var(--accent)" />
+    </svg>
+  );
+}
+
+/** "▼ BEZEL" wordmark. */
+export function Wordmark({ size = 'text-[2rem]' }: { size?: string }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <DivePip className="h-[0.7rem] w-[0.875rem]" />
+      <span className={`display leading-none ${size}`}>Bezel</span>
+    </span>
+  );
 }

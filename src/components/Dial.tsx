@@ -290,7 +290,7 @@ export function Dial({ value, onChange, label = 'Score', watch }: DialProps) {
         })}
       </div>
       <p id={`${labelId}-hint`} className="mt-2 text-center text-xs text-muted">
-        Turn the dial with your finger, or tap a number
+        {spec ? 'Turn the bezel or tap a number' : 'Turn the dial or tap a number'}
       </p>
       <div className="mt-3 grid grid-cols-10 gap-1" aria-label="Choose a score">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
@@ -300,8 +300,8 @@ export function Dial({ value, onChange, label = 'Score', watch }: DialProps) {
             aria-pressed={value === n}
             aria-label={`${n}`}
             onClick={() => onChange(n)}
-            className={`tabular min-h-11 rounded-lg text-sm font-semibold ${
-              value === n ? 'bg-accent text-on-accent' : 'bg-surface-2 text-ink'
+            className={`num min-h-11 border text-xl ${
+              value === n ? 'border-accent bg-accent text-on-accent' : 'border-line text-ink'
             }`}
           >
             {n}

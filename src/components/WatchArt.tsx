@@ -221,9 +221,9 @@ export function WatchArt({ watch, className = '' }: { watch: ArtInput; className
 
 const ROMAN10 = ['X', 'I', 'II', 'III', 'IIII', 'V', 'VI', 'VII', 'VIII', 'IX'];
 
-/** Highlight for the chosen score: dark gold on light dials, bright gold on dark ones. */
+/** Highlight for the chosen score: dive-hand orange, darker on light dials so it reads. */
 export function highlightFor(s: ArtSpec) {
-  return s.ink === '#1b1d20' ? '#8a6a22' : '#e2bf6a';
+  return s.ink === '#1b1d20' ? '#c2410c' : '#ff7a3d';
 }
 
 /** Where a score's tap target sits on this watch's dial (viewBox units). */
@@ -291,8 +291,8 @@ export function WatchRatingFace({ spec: s, angle, selected = null, centerText, b
                 textAnchor="middle"
                 dominantBaseline="central"
                 fontSize={s.roman ? (n === 10 ? 15 : on ? 14 : 12) : n === 10 ? 17 : 15}
-                fontWeight={on ? 700 : 600}
-                fontFamily="var(--font-serif)"
+                fontWeight={on ? 800 : 700}
+                fontFamily={s.roman ? 'Georgia, serif' : 'var(--font-display)'}
                 fill={on ? hi : s.ink}
               >
                 {s.roman ? ROMAN10[n % 10] : n}
@@ -313,8 +313,8 @@ export function WatchRatingFace({ spec: s, angle, selected = null, centerText, b
         textAnchor="middle"
         dominantBaseline="central"
         fontSize={rect ? (centerText.length > 2 ? 10 : 14) : centerText.length > 2 ? 17 : 24}
-        fontWeight={600}
-        fontFamily="var(--font-serif)"
+        fontWeight={800}
+        fontFamily="var(--font-display)"
         fill={s.ink}
       >
         {centerText}

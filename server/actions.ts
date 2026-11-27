@@ -417,6 +417,7 @@ export const userActions: Record<string, Action> = {
         `select * from (
            (select 'rating' as kind, r.id, r.created_at, r.user_id, p.display_name, r.watch_id,
                    b.name as brand_name, m.name as model_name, w.reference,
+                   w.case_material, w.dial_color, w.extras,
                    r.score, left(r.review_text, 141) as snippet
               from public.ratings r
               join public.profiles p on p.id = r.user_id
@@ -426,7 +427,8 @@ export const userActions: Record<string, Action> = {
              order by r.created_at desc limit 30)
            union all
            (select 'watch', w.id, w.created_at, w.created_by, p.display_name, w.id,
-                   b.name, m.name, w.reference, null::smallint, null::text
+                   b.name, m.name, w.reference, w.case_material, w.dial_color, w.extras,
+                   null::smallint, null::text
               from public.watches w
               join public.profiles p on p.id = w.created_by
               join public.models m on m.id = w.model_id

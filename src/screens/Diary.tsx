@@ -14,7 +14,7 @@ export function Diary() {
 
   return (
     <div className="space-y-4">
-      <h1 className="display text-4xl">My Diary</h1>
+      <h1 className="display text-[2.75rem]">My Diary</h1>
       {diary.isPending ? (
         <SkeletonRows rows={6} />
       ) : diary.isError ? (
@@ -23,14 +23,14 @@ export function Diary() {
         <EmptyState
           title="Your diary is empty. Rate your first watch."
           action={
-            <Link to="/search" className="inline-flex min-h-11 items-center rounded-xl bg-accent px-4 font-semibold text-on-accent">
+            <Link to="/search" className="display inline-flex min-h-12 items-center bg-accent px-5 text-lg tracking-[0.06em] text-on-accent">
               Find a watch
             </Link>
           }
         />
       ) : (
         <>
-          <ul className="space-y-2">
+          <ul className="border-t border-line">
             {entries.map((e) => {
               const t = watchTitle(e);
               return (
@@ -38,15 +38,16 @@ export function Diary() {
                   <button
                     type="button"
                     onClick={() => setEditing(e)}
-                    className="flex w-full items-start gap-3 rounded-card border border-line bg-surface p-3 text-left"
+                    className="flex w-full items-start gap-3 border-b border-line py-3 text-left"
                     aria-label={`${t.title}, ${e.score} out of 10 on ${formatDate(e.rated_on)}. Edit entry`}
                   >
                     <ScoreBadge score={e.score} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold">{t.title}</p>
-                      <p className="truncate text-sm text-muted">
+                      <p className="label !text-[0.625rem]">{e.brand_name}</p>
+                      <p className="display truncate text-xl">{e.model_name}</p>
+                      <p className="mono truncate text-xs text-muted">
                         {formatDate(e.rated_on)}
-                        {t.hasReference && <> · {t.subtitle}</>}
+                        {t.hasReference && <> · {e.reference}</>}
                       </p>
                       {e.review_text && <p className="mt-1 truncate text-sm">{e.review_text}</p>}
                     </div>
