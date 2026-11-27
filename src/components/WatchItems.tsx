@@ -92,3 +92,14 @@ export function FeedItem({ item, meId }: { item: Feed; meId: string }) {
     </li>
   );
 }
+
+/** "Brand Model" with the nickname in orange: for sheet titles. */
+export function WatchName({ w }: { w: { brand_name: string; model_name: string; extras?: Record<string, unknown> | null } }) {
+  const nickname = nick(w.extras?.nickname);
+  return (
+    <>
+      {w.brand_name} {w.model_name}
+      {nickname && <span className="text-accent"> “{nickname}”</span>}
+    </>
+  );
+}

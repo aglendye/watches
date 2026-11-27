@@ -1,14 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import type { CommunityRating, RatingEntry, WatchDetail } from '../../shared/types';
+import type { CommunityRating, Ownership, RatingEntry, WatchDetail, WatchOwner } from '../../shared/types';
 import { WatchArt, WatchImage } from '../components/WatchArt';
+import { OwnershipSheet } from '../components/OwnershipSheet';
 import { RatingSheet } from '../components/RatingSheet';
+import { WatchName } from '../components/WatchItems';
 import { Sheet } from '../components/Sheet';
 import { Button, EmptyState, ErrorState, ScoreBadge, SectionTitle, SkeletonRows } from '../components/ui';
 import { errorMessage } from '../lib/api';
 import { useMe } from '../lib/auth';
 import { formatDate, localToday, plural, watchTitle } from '../lib/format';
-import { useCommunityRatings, usePersonEntries, useWatch } from '../lib/queries';
+import { useCommunityRatings, useOwners, usePersonEntries, useWatch } from '../lib/queries';
 
 const EXTRA_LABELS: Record<string, string> = {
   caliber: 'Caliber',
@@ -43,6 +45,8 @@ export function Watch() {
 
   const [rating, setRating] = useState<{ open: boolean; entry: RatingEntry | null }>({ open: false, entry: null });
   const [person, setPerson] = useState<CommunityRating | null>(null);
+  const [owning, setOwning] = useState<{ open: boolean; ownership: Ownership | null }>({ open: false, ownership: null });
+  const owners = useOwners(id);
 
   // ?rate=1 opens the rating sheet once, then is removed from the URL.
   useEffect(() => {
@@ -111,6 +115,10 @@ export function Watch() {
         </p>
       </section>
 
+      <div role="group" aria-label="More actions" className="grid grid-flow-col auto-cols-fr divide-x divide-line border border-line">
+        <ActionButton onClick={() => setOwning({ open: true, ownership: null })}>I own this</ActionButton>
+      </div>
+
       <section aria-labelledby="specs-title">
         <SectionTitle id="specs-title">Specs</SectionTitle>
         {specs.length === 0 ? (
@@ -135,6 +143,12 @@ export function Watch() {
           )}
         </p>
       </section>
+
+      <Owners
+        query={owners}
+        meId={me.id}
+        onEdit={(o) => setOwning({ open: true, ownership: o })}
+      />
 
       <section aria-labelledby="ratings-title">
         <SectionTitle id="ratings-title">Ratings</SectionTitle>
@@ -191,6 +205,13 @@ export function Watch() {
         latest={mine}
         entry={rating.entry}
       />
+      <OwnershipSheet
+        open={owning.open}
+        onClose={() => setOwning({ open: false, ownership: null })}
+        watchId={w.watch_id}
+        ownership={owning.ownership}
+        title={<WatchName w={w} />}
+      />
       <PersonEntries
         watchId={w.watch_id}
         person={person}
@@ -244,5 +265,75 @@ function PersonEntries({
         </ul>
       )}
     </Sheet>
+  );
+}
+
+/** Secondary watch-page action: outlined condensed capitals in a ruled row. */
+function ActionButton({ children, onClick }: { children: ReactNode; onClick(): void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="display flex min-h-12 items-center justify-center px-2 text-center text-[1.0625rem] leading-none tracking-[0.06em] text-ink"
+    >
+      {children}
+    </button>
+  );
+}
+
+function Owners({
+  query,
+  meId,
+  onEdit,
+}: {
+  query: ReturnType<typeof useOwners>;
+  meId: string;
+  onEdit(o: WatchOwner): void;
+}) {
+  return (
+    <section aria-labelledby="owners-title">
+      <SectionTitle id="owners-title">Owners</SectionTitle>
+      {query.isPending ? (
+        <SkeletonRows rows={1} />
+      ) : query.isError ? (
+        <ErrorState message={errorMessage(query.error)} onRetry={() => void query.refetch()} />
+      ) : query.data.length === 0 ? (
+        <p className="border-y border-line py-3 text-muted">Nobody has this in their collection yet.</p>
+      ) : (
+        <ul className="border-t border-line">
+          {query.data.map((o) => {
+            const mine = o.user_id === meId;
+            const who = mine ? 'You' : o.display_name;
+            const detail = o.sold_on
+              ? `Sold ${formatDate(o.sold_on, { short: true })}`
+              : o.acquired_on
+                ? `Since ${formatDate(o.acquired_on, { short: true })}`
+                : '';
+            const body = (
+              <>
+                <span className="font-semibold">{who}</span>
+                <span className="flex items-center gap-2">
+                  {detail && <span className="mono text-xs text-muted">{detail}</span>}
+                  {o.sold_on && <span className="label border border-line px-1.5 py-0.5 !text-[0.625rem]">Sold</span>}
+                  {mine && <span className="text-sm font-semibold text-accent">Edit</span>}
+                </span>
+              </>
+            );
+            const cls = `flex min-h-11 w-full items-center justify-between gap-3 border-b border-line py-2 text-left ${o.sold_on ? 'opacity-70' : ''}`;
+            return (
+              <li key={o.id}>
+                {mine ? (
+                  <button type="button" className={cls} onClick={() => onEdit(o)} aria-label={`Your ownership${detail ? `, ${detail}` : ''}. Edit`}>
+                    {body}
+                  </button>
+                ) : (
+                  <div className={cls}>{body}</div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

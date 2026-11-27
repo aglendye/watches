@@ -120,7 +120,7 @@ describe('6.8 database acceptance', () => {
 
   it('8. creator cannot delete a watch someone else rated, but can delete an unrated one', async () => {
     await expect(alice.call('watches.delete', { id: speedyId })).rejects.toThrow(
-      'This watch has ratings from other people and cannot be deleted',
+      'Other people have rated, owned, listed or photographed this watch',
     );
     expect((await alice.call('watches.get', { id: speedyId })).can_delete).toBe(false);
 

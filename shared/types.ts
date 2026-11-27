@@ -117,3 +117,36 @@ export interface SpecUpdate {
   model?: string;
   reference?: string | null;
 }
+
+/** Brand, model and the fields the drawing needs. */
+export interface WatchArtFields {
+  brand_name: string;
+  model_name: string;
+  reference: string | null;
+  case_material: string | null;
+  dial_color: string | null;
+  extras: Record<string, unknown> | null;
+  primary_image_url?: string | null;
+}
+
+export interface Ownership {
+  id: string;
+  user_id: string;
+  watch_id: string;
+  acquired_on: string | null; // YYYY-MM-DD
+  sold_on: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface WatchOwner extends Ownership {
+  display_name: string;
+}
+
+export interface CollectionItem extends Ownership, WatchArtFields {}
+
+export interface OwnershipInput {
+  acquiredOn: string;
+  soldOn: string;
+  notes: string;
+}

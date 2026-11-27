@@ -49,6 +49,17 @@ export function date(p: Params, key: string): string {
   return v;
 }
 
+/** Optional past-or-today date (YYYY-MM-DD); missing or blank becomes null. */
+export function optPastDate(p: Params, key: string, label: string): string | null {
+  const v = p[key];
+  if (v === undefined || v === null || v === '') return null;
+  if (typeof v !== 'string' || !DATE.test(v) || Number.isNaN(Date.parse(v)) || v < '1900-01-01')
+    throw badRequest(`Choose a valid ${label}.`);
+  const tomorrowUtc = new Date(Date.now() + 36 * 3600 * 1000).toISOString().slice(0, 10);
+  if (v > tomorrowUtc) throw badRequest(`The ${label} can’t be in the future.`);
+  return v;
+}
+
 export function score(p: Params): number {
   const v = p.score;
   if (typeof v !== 'number' || !Number.isInteger(v) || v < 1 || v > 10)

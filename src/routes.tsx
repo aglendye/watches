@@ -6,6 +6,7 @@ import { Button } from './components/ui';
 import { DialFace } from './components/Dial';
 import { useAuth } from './lib/auth';
 import { AddWatch } from './screens/AddWatch';
+import { Collection } from './screens/Collection';
 import { Auth } from './screens/Auth';
 import { Diary } from './screens/Diary';
 import { EditWatch } from './screens/EditWatch';
@@ -96,6 +97,7 @@ export function AppRoutes() {
           <Route path="/watch/:id/edit" element={<EditWatch />} />
           <Route path="/diary" element={<Diary />} />
           <Route path="/me" element={<Me />} />
+          <Route path="/collection" element={<Collection />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

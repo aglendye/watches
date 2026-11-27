@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useToast } from '../components/Toast';
-import { Button, Card, Field, FormError } from '../components/ui';
+import { Button, Card, Field, FormError, NavRow } from '../components/ui';
 import { errorMessage } from '../lib/api';
 import { useAuth, useMe } from '../lib/auth';
 import { useUpdateProfile } from '../lib/queries';
@@ -44,6 +44,9 @@ export function Me() {
   return (
     <div className="space-y-6">
       <h1 className="display text-[2.75rem]">Me</h1>
+      <nav aria-label="Your things" className="border-t border-line">
+        <NavRow to="/collection" label="My Collection" />
+      </nav>
       <Card className="p-4">
         <form onSubmit={save} noValidate className="space-y-3">
           <Field

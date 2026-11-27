@@ -7,7 +7,10 @@ import {
   keepPreviousData,
 } from '@tanstack/react-query';
 import type {
+  CollectionItem,
   CommunityRating,
+  OwnershipInput,
+  WatchOwner,
   DiaryEntry,
   FeedItem,
   CatalogWatch,
@@ -136,3 +139,30 @@ export const useDeleteRating = () => useWrite((id: string) => call<{ ok: true }>
 
 export const useUpdateProfile = () =>
   useWrite((displayName: string) => call<{ ok: true }>('profile.update', { displayName }));
+
+// ---------------------------------------------------------------------
+// Ownership (M7)
+// ---------------------------------------------------------------------
+export function useOwners(watchId: string) {
+  return useQuery({
+    queryKey: ['owners', watchId],
+    queryFn: () => call<WatchOwner[]>('ownerships.forWatch', { watchId }),
+    staleTime: LIST_STALE,
+  });
+}
+
+export function useCollection() {
+  return useQuery({
+    queryKey: ['collection'],
+    queryFn: () => call<CollectionItem[]>('ownerships.mine'),
+    staleTime: LIST_STALE,
+  });
+}
+
+export const useCreateOwnership = () =>
+  useWrite((p: OwnershipInput & { watchId: string }) => call<{ id: string }>('ownerships.create', { ...p }));
+
+export const useUpdateOwnership = () =>
+  useWrite((p: OwnershipInput & { id: string }) => call<{ ok: true }>('ownerships.update', { ...p }));
+
+export const useDeleteOwnership = () => useWrite((id: string) => call<{ ok: true }>('ownerships.delete', { id }));

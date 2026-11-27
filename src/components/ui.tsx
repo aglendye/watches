@@ -1,4 +1,5 @@
 // Small shared building blocks: buttons, fields, states, badges.
+import { Link } from 'react-router-dom';
 import { useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
 
 type ButtonKind = 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -139,5 +140,29 @@ export function Wordmark({ size = 'text-[2rem]' }: { size?: string }) {
       <DivePip className="h-[0.7rem] w-[0.875rem]" />
       <span className={`display leading-none ${size}`}>Bezel</span>
     </span>
+  );
+}
+
+/** "‹ Back" link at the top of a screen. */
+export function BackLink({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link to={to} className="inline-flex min-h-11 items-center font-semibold text-accent">
+      ‹ {children}
+    </Link>
+  );
+}
+
+/** A ruled navigation row: label on the left, optional detail and a chevron on the right. */
+export function NavRow({ to, label, detail }: { to: string; label: string; detail?: string }) {
+  return (
+    <Link to={to} className="flex min-h-14 items-center justify-between gap-3 border-b border-line">
+      <span className="display text-2xl">{label}</span>
+      <span className="flex items-center gap-3 text-muted">
+        {detail && <span className="mono text-sm">{detail}</span>}
+        <span aria-hidden="true" className="text-2xl">
+          ›
+        </span>
+      </span>
+    </Link>
   );
 }

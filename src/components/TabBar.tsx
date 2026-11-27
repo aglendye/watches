@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 
 const ICONS: Record<string, string> = {
   home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -11,10 +11,11 @@ const TABS = [
   { to: '/', label: 'Home', icon: 'home', end: true },
   { to: '/add', label: 'Add', icon: 'add', end: false },
   { to: '/diary', label: 'My Diary', icon: 'diary', end: false },
-  { to: '/me', label: 'Me', icon: 'me', end: false },
+  { to: '/me', label: 'Me', icon: 'me', end: false, also: ['/collection', '/lists'] },
 ];
 
 export function TabBar() {
+  const { pathname } = useLocation();
   return (
     <nav
       aria-label="Main"
@@ -26,11 +27,14 @@ export function TabBar() {
             <NavLink
               to={t.to}
               end={t.end}
-              className={({ isActive }) =>
+              className={({ isActive: active }) => {
+                const isActive = active || (t.also ?? []).some((p) => pathname.startsWith(p));
+                return (
                 `flex min-h-14 flex-col items-center justify-center gap-0.5 text-[0.7rem] font-semibold tracking-[0.12em] uppercase ${
                   isActive ? 'text-bar-active' : 'text-bar-text'
                 }`
-              }
+                );
+              }}
             >
               <svg viewBox="0 0 24 24" className="size-6" aria-hidden="true">
                 <path

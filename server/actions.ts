@@ -60,6 +60,22 @@ const CATALOG_COLS = `c.watch_id, c.brand_id, c.brand_name, c.model_id, c.model_
   c.water_resistance_m, c.year_introduced, c.extras, c.created_by, c.created_at,
   c.avg_score::float8 as avg_score, c.rating_count`;
 
+/** Brand, model and the fields the drawing needs, for a watch aliased w joined to m and b. */
+const WATCH_ART_COLS = `b.name as brand_name, m.name as model_name, w.reference,
+  w.case_material, w.dial_color, w.extras`;
+const WATCH_JOINS = `join public.models m on m.id = w.model_id
+  join public.brands b on b.id = m.brand_id`;
+
+const OWNERSHIP_COLS = `o.id, o.user_id, o.watch_id, o.acquired_on::text as acquired_on,
+  o.sold_on::text as sold_on, o.notes, o.created_at`;
+
+function ownershipInput(p: Params) {
+  const acquired = v.optPastDate(p, 'acquiredOn', 'acquired date');
+  const sold = v.optPastDate(p, 'soldOn', 'sold date');
+  if (acquired && sold && sold < acquired) throw badRequest('The sold date can’t be before the acquired date.');
+  return [acquired, sold, v.optStr(p, 'notes', 1000)] as const;
+}
+
 const RATING_COLS = `r.id, r.user_id, r.watch_id, r.score, r.review_text, r.rated_on::text as rated_on, r.created_at`;
 
 // ---------------------------------------------------------------------
@@ -234,9 +250,8 @@ export const userActions: Record<string, Action> = {
                 up.display_name as updated_by_name,
                 w.updated_at,
                 (c.created_by = auth.uid() or public.is_admin()) as can_edit_identity,
-                (public.is_admin() or (c.created_by = auth.uid() and not exists (
-                   select 1 from public.ratings r where r.watch_id = c.watch_id and r.user_id <> auth.uid()
-                ))) as can_delete
+                (public.is_admin() or (c.created_by = auth.uid()
+                   and not public.watch_used_by_others(c.watch_id))) as can_delete
            from public.watch_catalog c
            join public.watches w on w.id = c.watch_id
            join public.profiles cp on cp.id = c.created_by
@@ -448,5 +463,81 @@ export const userActions: Record<string, Action> = {
       q(`select ${CATALOG_COLS} from public.watch_catalog c order by c.created_at desc limit 12`),
     );
     return rows;
+  },
+
+  // -------------------------------------------------------------------
+  // ownership (M7). Not shown in the activity feed (PRD 5.11).
+  // -------------------------------------------------------------------
+  async 'ownerships.forWatch'(p, ctx) {
+    const watchId = v.uuid(p, 'watchId');
+    const [rows] = await user(
+      ctx,
+      q(
+        `select ${OWNERSHIP_COLS}, pr.display_name
+           from public.ownerships o
+           join public.profiles pr on pr.id = o.user_id
+          where o.watch_id = $1
+          order by (o.sold_on is null) desc, (o.user_id = auth.uid()) desc,
+                   pr.display_name, o.created_at`,
+        watchId,
+      ),
+    );
+    return rows;
+  },
+
+  async 'ownerships.mine'(_p, ctx) {
+    const [rows] = await user(
+      ctx,
+      q(
+        `select ${OWNERSHIP_COLS}, ${WATCH_ART_COLS}
+           from public.ownerships o
+           join public.watches w on w.id = o.watch_id
+           ${WATCH_JOINS}
+          where o.user_id = auth.uid()
+          order by o.acquired_on desc nulls last, o.created_at desc`,
+      ),
+    );
+    return rows;
+  },
+
+  async 'ownerships.create'(p, ctx) {
+    const watchId = v.uuid(p, 'watchId');
+    const [acquired, sold, notes] = ownershipInput(p);
+    const [[row]] = await user(
+      ctx,
+      q(
+        `insert into public.ownerships (watch_id, acquired_on, sold_on, notes)
+         values ($1, $2, $3, $4) returning id`,
+        watchId,
+        acquired,
+        sold,
+        notes,
+      ),
+    );
+    return { id: row.id };
+  },
+
+  async 'ownerships.update'(p, ctx) {
+    const id = v.uuid(p, 'id');
+    const [acquired, sold, notes] = ownershipInput(p);
+    const [rows] = await user(
+      ctx,
+      q(
+        `update public.ownerships set acquired_on = $2, sold_on = $3, notes = $4
+          where id = $1 returning id`,
+        id,
+        acquired,
+        sold,
+        notes,
+      ),
+    );
+    if (!rows[0]) throw forbidden('You can only edit your own collection.');
+    return { ok: true };
+  },
+
+  async 'ownerships.delete'(p, ctx) {
+    const [rows] = await user(ctx, q('delete from public.ownerships where id = $1 returning id', v.uuid(p, 'id')));
+    if (!rows[0]) throw forbidden('You can only remove watches from your own collection.');
+    return { ok: true };
   },
 };
