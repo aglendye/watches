@@ -16,6 +16,11 @@ export interface SearchResult {
   watch_reference: string | null;
   match_score: number;
   nickname: string | null;
+  case_material: string | null;
+  dial_color: string | null;
+  extras: Record<string, unknown>;
+  /** Primary photo, when one has been uploaded (Phase 2). The drawing is shown otherwise. */
+  primary_image_url?: string | null;
   avg_score: number | null;
   rating_count: number;
 }
@@ -41,6 +46,8 @@ export interface CatalogWatch extends WatchSpecs {
   created_at: string;
   avg_score: number | null;
   rating_count: number;
+  /** Primary photo, when one has been uploaded (Phase 2). The drawing is shown otherwise. */
+  primary_image_url?: string | null;
 }
 
 export interface WatchDetail extends CatalogWatch {

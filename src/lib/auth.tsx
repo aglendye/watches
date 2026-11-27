@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { useQueryClient } from '@tanstack/react-query';
 import type { Me } from '../../shared/types';
 import { ApiError, call, setSignedOutHandler } from './api';
+import { reloadIfNewVersion } from './update';
 
 type Status = 'loading' | 'signedIn' | 'signedOut' | 'offline';
 
@@ -39,7 +40,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh();
     const onVisible = () => {
-      if (document.visibilityState === 'visible') void refresh();
+      if (document.visibilityState !== 'visible') return;
+      void refresh();
+      void reloadIfNewVersion();
     };
     document.addEventListener('visibilitychange', onVisible);
     setSignedOutHandler(() => {

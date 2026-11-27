@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import type { CommunityRating, RatingEntry, WatchDetail } from '../../shared/types';
 import { DialReadOnly } from '../components/DialReadOnly';
-import { DialFace } from '../components/Dial';
+import { WatchArt, WatchImage } from '../components/WatchArt';
 import { RatingSheet } from '../components/RatingSheet';
 import { Sheet } from '../components/Sheet';
 import { Button, Card, EmptyState, ErrorState, ScoreBadge, SectionTitle, SkeletonRows } from '../components/ui';
@@ -68,18 +68,20 @@ export function Watch() {
         <Link to="/" className="inline-flex min-h-11 items-center font-medium text-accent">
           ‹ Home
         </Link>
-        {/* Placeholder image block (photos arrive in Phase 2) */}
-        <div className="grid aspect-[16/9] place-items-center rounded-card border border-line bg-surface-2" aria-hidden="true">
-          <div className="w-24 opacity-40">
-            <DialFace hand={null} centerText="" showNumbers={false} />
-          </div>
+        {/* The uploaded photo when there is one (Phase 2), otherwise a drawing from the watch's data */}
+        <div className="grid aspect-[16/9] place-items-center overflow-hidden rounded-card border border-line bg-surface-2">
+          {w.primary_image_url ? (
+            <WatchImage watch={w} photoUrl={w.primary_image_url} className="h-full w-full" />
+          ) : (
+            <WatchArt watch={w} className="h-[88%] w-auto" />
+          )}
         </div>
         <div>
           <p className="label">{w.brand_name}</p>
           <h1 className="text-2xl leading-tight font-bold">{w.model_name}</h1>
           <p className={`mt-1 ${t.hasReference ? 'tabular' : 'text-muted italic'}`}>{t.subtitle}</p>
           {typeof w.extras?.nickname === 'string' && w.extras.nickname && (
-            <p className="mt-1 text-muted">“{w.extras.nickname}”</p>
+            <p className="mt-1 text-lg font-medium text-accent">“{w.extras.nickname}”</p>
           )}
         </div>
       </header>

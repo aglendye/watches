@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { CatalogWatch, FeedItem as Feed, SearchResult } from '../../shared/types';
 import { plural, relativeTime, watchTitle } from '../lib/format';
-import { DialReadOnly } from './DialReadOnly';
+import { WatchImage } from './WatchArt';
 
 export function WatchRow({ w }: { w: SearchResult }) {
   const t = watchTitle(w);
@@ -10,16 +10,21 @@ export function WatchRow({ w }: { w: SearchResult }) {
       to={`/watch/${w.watch_id}`}
       className="flex min-h-16 items-center gap-3 rounded-card border border-line bg-surface px-3 py-2"
     >
-      <DialReadOnly avg={w.avg_score} className="w-12" showNumbers={false} />
+      <WatchImage
+        watch={{ ...w, reference: w.watch_reference }}
+        photoUrl={w.primary_image_url}
+        className="size-14 shrink-0 rounded-lg"
+      />
       <div className="min-w-0 flex-1">
         <p className="line-clamp-2 leading-snug font-semibold">{t.title}</p>
-        <p className={`truncate text-sm ${t.hasReference ? 'tabular text-ink' : 'text-muted italic'}`}>
+        {w.nickname && <p className="text-sm leading-snug font-medium text-accent">“{w.nickname}”</p>}
+        <p className={`truncate text-sm ${t.hasReference ? 'tabular text-muted' : 'text-muted italic'}`}>
           {t.hasReference ? t.subtitle : 'reference not specified'}
-          {w.nickname && <span className="text-muted not-italic"> · “{w.nickname}”</span>}
         </p>
       </div>
       <div className="shrink-0 text-right text-sm text-muted">
-        {w.rating_count === 0 ? 'No ratings' : plural(w.rating_count, 'rating')}
+        {w.avg_score !== null && <p className="tabular text-base font-semibold text-ink">{w.avg_score.toFixed(1)}</p>}
+        <p>{w.rating_count === 0 ? 'No ratings' : plural(w.rating_count, 'rating')}</p>
       </div>
     </Link>
   );
@@ -27,15 +32,17 @@ export function WatchRow({ w }: { w: SearchResult }) {
 
 export function WatchCard({ w }: { w: CatalogWatch }) {
   const t = watchTitle(w);
+  const nickname = typeof w.extras?.nickname === 'string' ? w.extras.nickname : null;
   return (
     <Link
       to={`/watch/${w.watch_id}`}
       className="flex w-40 shrink-0 snap-start flex-col gap-2 rounded-card border border-line bg-surface p-3"
     >
-      <DialReadOnly avg={w.avg_score} className="mx-auto w-20" showNumbers={false} />
+      <WatchImage watch={w} photoUrl={w.primary_image_url} className="mx-auto size-24 rounded-lg" />
       <div className="min-w-0">
         <p className="label truncate !text-[0.7rem]">{w.brand_name}</p>
         <p className="line-clamp-2 leading-snug font-semibold">{w.model_name}</p>
+        {nickname && <p className="truncate text-sm font-medium text-accent">“{nickname}”</p>}
         <p className="mt-0.5 truncate text-sm text-muted">
           {w.avg_score === null ? 'Not rated yet' : `${w.avg_score.toFixed(1)} avg`}
         </p>

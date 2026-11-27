@@ -23,9 +23,13 @@ Adam asked for 500 to 1,000 seeded watches from brands like Rolex, Omega, Breitl
 - Add a watch has an optional Nickname field. Migration `003_add_watch_nickname.sql` adds a 4-argument `add_watch(brand, model, reference, nickname)`; the nickname is only stored when the watch is new (an existing watch is returned unchanged). The original 3-argument function is untouched.
 - Edit details has a Nickname field that anyone can edit, like specs; blank removes it. Stored in `extras.nickname`, searched by migration 002, shown under the reference on the watch page and in search results.
 
-### Watch images
+### Watch images and drawn dials (Adam, Nov 26)
 
-Not scraped: watch photos on brand, dealer and auction sites are copyrighted, and the spec rules out external images. Phase 2 photo uploads remain the plan; generated dial illustrations were offered as an interim option.
+- Not scraped: watch photos on brand, dealer and auction sites are copyrighted, and the spec rules out external images.
+- Every watch gets a drawn illustration generated from its data (`src/lib/watchArt.ts`, `src/components/WatchArt.tsx`): case shape (round, square, rectangular, octagonal), case metal, bezel (two-colour GMT by reference code with the night colour on top, dive insert, tachymeter, fluted, slide rule, smooth), dial colour, chronograph sub-dials, GMT hand and date window. No logos or brand text.
+- `WatchImage` shows the uploaded photo when `primary_image_url` is set and the drawing otherwise, so Phase 2 photo uploads replace the drawing automatically.
+- Nicknames are shown on their own line (accent colour) in search results, Recently added cards and the watch page.
+- The installed app checks for a new version whenever it returns to the foreground and reloads once if the deployed bundle has changed (`src/lib/update.ts`).
 
 ### Bracelet and bezel
 
