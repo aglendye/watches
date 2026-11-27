@@ -43,7 +43,7 @@ export function Me() {
 
   return (
     <div className="space-y-6">
-      <h1 className="display text-3xl">Me</h1>
+      <h1 className="display text-4xl">Me</h1>
       <Card className="p-4">
         <form onSubmit={save} noValidate className="space-y-3">
           <Field

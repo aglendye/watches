@@ -18,12 +18,12 @@ function dial({ size, padding }) {
   }).join('');
   const handA = (8 * 36 * Math.PI) / 180;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-    <rect width="${size}" height="${size}" fill="#0b3d29"/>
-    <circle cx="${c}" cy="${c}" r="${r}" fill="#0d3324" stroke="#cfae6a" stroke-width="${size * 0.02}"/>
+    <rect width="${size}" height="${size}" fill="#006039"/>
+    <circle cx="${c}" cy="${c}" r="${r}" fill="#004a2c" stroke="#d2ad5c" stroke-width="${size * 0.02}"/>
     ${ticks}
     <line x1="${c}" y1="${c}" x2="${c + r * 0.55 * Math.sin(handA)}" y2="${c - r * 0.55 * Math.cos(handA)}"
-      stroke="#cfae6a" stroke-width="${size * 0.03}" stroke-linecap="round"/>
-    <circle cx="${c}" cy="${c}" r="${size * 0.035}" fill="#cfae6a"/>
+      stroke="#d2ad5c" stroke-width="${size * 0.03}" stroke-linecap="round"/>
+    <circle cx="${c}" cy="${c}" r="${size * 0.035}" fill="#d2ad5c"/>
   </svg>`;
 }
 

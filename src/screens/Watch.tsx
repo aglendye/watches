@@ -78,7 +78,7 @@ export function Watch() {
         </div>
         <div>
           <p className="label">{w.brand_name}</p>
-          <h1 className="display text-3xl leading-tight">{w.model_name}</h1>
+          <h1 className="display text-4xl">{w.model_name}</h1>
           <p className={`mt-1 ${t.hasReference ? 'tabular' : 'text-muted italic'}`}>{t.subtitle}</p>
           {typeof w.extras?.nickname === 'string' && w.extras.nickname && (
             <p className="mt-1 text-lg font-medium text-gold">“{w.extras.nickname}”</p>
@@ -87,14 +87,14 @@ export function Watch() {
       </header>
 
       <Card className="flex items-center gap-4 p-4">
-        <DialReadOnly avg={w.avg_score} className="w-28" />
+        <DialReadOnly avg={w.avg_score} className="w-32" watch={w} />
         <div>
           <p className="label">Community score</p>
           {w.rating_count === 0 ? (
             <p className="mt-1 text-lg font-semibold">No ratings yet</p>
           ) : (
             <p className="tabular mt-1 text-lg">
-              <span className="text-2xl font-bold">{w.avg_score?.toFixed(1)}</span> from{' '}
+              <span className="serif text-3xl">{w.avg_score?.toFixed(1)}</span> from{' '}
               {plural(w.rating_count, 'person', 'people')}
             </p>
           )}
@@ -196,6 +196,7 @@ export function Watch() {
         onClose={() => setRating({ open: false, entry: null })}
         watchId={w.watch_id}
         watchTitle={t.title}
+        watch={w}
         latest={mine}
         entry={rating.entry}
       />

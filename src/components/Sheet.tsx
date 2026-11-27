@@ -75,7 +75,7 @@ export function Sheet({ open, onClose, title, children, variant = 'bottom' }: Pr
       >
         {bottom && <div className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-line" aria-hidden="true" />}
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 id={titleId} className="text-lg font-semibold">
+          <h2 id={titleId} className="serif text-2xl">
             {title}
           </h2>
           <button

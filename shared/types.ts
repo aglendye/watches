@@ -77,6 +77,9 @@ export interface DiaryEntry extends RatingEntry {
   brand_name: string;
   model_name: string;
   reference: string | null;
+  case_material?: string | null;
+  dial_color?: string | null;
+  extras?: Record<string, unknown> | null;
 }
 
 export interface FeedItem {

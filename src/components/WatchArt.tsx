@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { deriveArt, type ArtInput, type ArtSpec } from '../lib/watchArt';
+import { deriveArt, edgeDistance, polarPoint, type ArtInput, type ArtSpec } from '../lib/watchArt';
 
 const CX = 100;
 const CY = 100;
@@ -114,12 +114,12 @@ function Case({ s }: { s: ArtSpec }) {
   );
 }
 
-function Dial({ s, clip }: { s: ArtSpec; clip: string }) {
-  const rect = s.shape === 'rect';
+/** The dial's surface (colour and texture), without markers. */
+function DialPlate({ s, clip }: { s: ArtSpec; clip: string }) {
   const r = s.shape === 'round' ? 72 : s.shape === 'octagon' ? 70 : 74;
   return (
     <g>
-      {rect ? (
+      {s.shape === 'rect' ? (
         <rect x={58} y={26} width={84} height={148} rx={8} fill={s.dial} />
       ) : s.shape === 'square' ? (
         <rect x={26} y={26} width={148} height={148} rx={18} fill={s.dial} />
@@ -136,6 +136,16 @@ function Dial({ s, clip }: { s: ArtSpec; clip: string }) {
             </g>
           ))}
       </g>
+    </g>
+  );
+}
+
+function Dial({ s, clip }: { s: ArtSpec; clip: string }) {
+  const rect = s.shape === 'rect';
+  const r = s.shape === 'round' ? 72 : s.shape === 'octagon' ? 70 : 74;
+  return (
+    <g>
+      <DialPlate s={s} clip={clip} />
       {/* hour markers */}
       {s.roman
         ? ROMAN.map((t, i) => {
@@ -205,6 +215,110 @@ export function WatchArt({ watch, className = '' }: { watch: ArtInput; className
       {s.shape === 'round' && <Bezel s={s} />}
       <Dial s={s} clip={clip} />
       <Hands s={s} />
+    </svg>
+  );
+}
+
+const ROMAN10 = ['X', 'I', 'II', 'III', 'IIII', 'V', 'VI', 'VII', 'VIII', 'IX'];
+
+/** Highlight for the chosen score: dark gold on light dials, bright gold on dark ones. */
+export function highlightFor(s: ArtSpec) {
+  return s.ink === '#1b1d20' ? '#8a6a22' : '#e2bf6a';
+}
+
+/** Where a score's tap target sits on this watch's dial (viewBox units). */
+export function scoreTarget(s: ArtSpec, n: number) {
+  const deg = (n % 10) * 36;
+  return polarPoint(edgeDistance(s.shape, deg, s.shape === 'rect' ? 18 : 22), deg);
+}
+
+interface RatingFaceProps {
+  spec: ArtSpec;
+  /** Hand angle in degrees, or null for no hand. */
+  angle: number | null;
+  selected?: number | null;
+  centerText: string;
+  /** Turns the bezel to this angle (round watches with a bezel). */
+  bezelDeg?: number;
+  turning?: boolean;
+  showNumbers?: boolean;
+}
+
+/**
+ * The rating dial drawn as the watch itself: its case, bezel and dial colours,
+ * with ten score markers in place of the hours and one hand pointing at the score.
+ * Purely visual (aria-hidden); the interactive parts live in Dial.
+ */
+export function WatchRatingFace({ spec: s, angle, selected = null, centerText, bezelDeg = 0, turning = false, showNumbers = true }: RatingFaceProps) {
+  const clip = useId().replace(/:/g, '');
+  const hi = highlightFor(s);
+  const rect = s.shape === 'rect';
+  const cap = rect ? 13 : 22;
+  const reach = rect ? 20 : s.roman ? 42 : 50;
+  const ease = turning ? '' : 'dial-hand';
+  return (
+    <svg viewBox="0 0 200 200" className="block h-full w-full" aria-hidden="true" focusable="false">
+      <defs>
+        <clipPath id={clip}>
+          <circle cx={CX} cy={CY} r={70} />
+        </clipPath>
+      </defs>
+      <Case s={s} />
+      {s.shape === 'round' && (
+        <g className={ease} style={{ transform: `rotate(${bezelDeg}deg)`, transformOrigin: '100px 100px' }}>
+          <Bezel s={s} />
+        </g>
+      )}
+      <DialPlate s={s} clip={clip} />
+      {Array.from({ length: 10 }, (_, i) => {
+        const n = i + 1;
+        const deg = (n % 10) * 36;
+        const on = n === selected;
+        const outer = edgeDistance(s.shape, deg, 4);
+        const a = polarPoint(outer, deg);
+        const b = polarPoint(outer - (n === 10 ? 14 : 10), deg);
+        // Roman-numeral dials (Cartier, Wimbledon) show numerals only, near the edge, like the real thing.
+        const t = polarPoint(outer - (s.roman ? (rect ? 12 : 10) : rect ? 17 : 23), deg);
+        return (
+          <g key={n}>
+            {!s.roman && (
+              <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={on ? hi : s.ink} strokeWidth={n === 10 ? 5 : 3.5} strokeLinecap="round" />
+            )}
+            {showNumbers && (
+              <text
+                x={t.x}
+                y={t.y}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={s.roman ? (n === 10 ? 15 : on ? 14 : 12) : n === 10 ? 17 : 15}
+                fontWeight={on ? 700 : 600}
+                fontFamily="var(--font-serif)"
+                fill={on ? hi : s.ink}
+              >
+                {s.roman ? ROMAN10[n % 10] : n}
+              </text>
+            )}
+          </g>
+        );
+      })}
+      {angle !== null && (
+        <g className={ease} style={{ transform: `rotate(${angle}deg)`, transformOrigin: '100px 100px' }}>
+          <path d={`M ${CX - 3.5} ${CY - cap + 1} L ${CX} ${CY - reach} L ${CX + 3.5} ${CY - cap + 1} Z`} fill={hi} stroke="#00000055" strokeWidth={0.6} />
+        </g>
+      )}
+      <circle cx={CX} cy={CY} r={cap} fill={s.dial} stroke={hi} strokeWidth={1.6} />
+      <text
+        x={CX}
+        y={CY + 1}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={rect ? (centerText.length > 2 ? 10 : 14) : centerText.length > 2 ? 17 : 24}
+        fontWeight={600}
+        fontFamily="var(--font-serif)"
+        fill={s.ink}
+      >
+        {centerText}
+      </text>
     </svg>
   );
 }

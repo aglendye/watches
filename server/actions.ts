@@ -395,7 +395,8 @@ export const userActions: Record<string, Action> = {
     const [rows] = await user(
       ctx,
       q(
-        `select ${RATING_COLS}, b.name as brand_name, m.name as model_name, w.reference
+        `select ${RATING_COLS}, b.name as brand_name, m.name as model_name, w.reference,
+                w.case_material, w.dial_color, w.extras
            from public.ratings r
            join public.watches w on w.id = r.watch_id
            join public.models m on m.id = w.model_id

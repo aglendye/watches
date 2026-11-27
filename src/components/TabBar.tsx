@@ -18,7 +18,7 @@ export function TabBar() {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bar pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] backdrop-blur"
     >
       <ul className="mx-auto flex max-w-2xl">
         {TABS.map((t) => (
@@ -27,8 +27,8 @@ export function TabBar() {
               to={t.to}
               end={t.end}
               className={({ isActive }) =>
-                `flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-medium ${
-                  isActive ? 'text-accent' : 'text-muted'
+                `flex min-h-14 flex-col items-center justify-center gap-0.5 text-[0.7rem] font-semibold tracking-[0.12em] uppercase ${
+                  isActive ? 'text-bar-active' : 'text-bar-text'
                 }`
               }
             >

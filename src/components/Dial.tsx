@@ -1,4 +1,6 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { deriveArt, type ArtInput } from '../lib/watchArt';
+import { scoreTarget, WatchRatingFace } from './WatchArt';
 
 /** Marker position in degrees clockwise from 12 o'clock: 10 at the top, 1 at 36°, 2 at 72°… */
 export function markerAngle(n: number): number {
@@ -133,6 +135,8 @@ interface DialProps {
   value: number | null;
   onChange(score: number): void;
   label?: string;
+  /** When given, the dial is drawn as this watch (its case, bezel and dial). */
+  watch?: ArtInput;
 }
 
 /**
@@ -140,7 +144,8 @@ interface DialProps {
  * clicking from number to number. Or tap a marker, use the arrow keys, or the
  * plain row of numbered buttons underneath.
  */
-export function Dial({ value, onChange, label = 'Score' }: DialProps) {
+export function Dial({ value, onChange, label = 'Score', watch }: DialProps) {
+  const spec = useMemo(() => (watch ? deriveArt(watch) : null), [watch]);
   const labelId = useId();
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const face = useRef<HTMLDivElement>(null);
@@ -188,7 +193,19 @@ export function Dial({ value, onChange, label = 'Score' }: DialProps) {
     const d = drag.current;
     if (!d || d.id !== e.pointerId) return;
     drag.current = null;
-    if (!d.on) return;
+    if (!d.on) {
+      // A tap picks the nearest number by angle, so it works on any dial shape
+      // (on a narrow rectangular dial the numbers sit close together). Taps on
+      // the centre are ignored.
+      const r = face.current!.getBoundingClientRect();
+      const off = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2));
+      if (r.width > 0 && off > r.width * 0.12) {
+        swallowClick.current = true;
+        const n = scoreAt(fingerAngle(e));
+        if (n !== value) onChange(n);
+      }
+      return;
+    }
     swallowClick.current = true; // the click that ends a turn is not a tap
     setTurning(false);
     const n = scoreAt(fingerAngle(e));
@@ -232,16 +249,27 @@ export function Dial({ value, onChange, label = 'Score' }: DialProps) {
           }
         }}
       >
-        <DialFace
-          hand={value}
-          handDeg={value === null && !turning ? undefined : deg}
-          bezelDeg={deg}
-          turning={turning}
-          selected={value}
-          centerText={value === null ? '–' : String(value)}
-        />
+        {spec ? (
+          <WatchRatingFace
+            spec={spec}
+            angle={value === null && !turning ? null : deg}
+            bezelDeg={deg}
+            turning={turning}
+            selected={value}
+            centerText={value === null ? '–' : String(value)}
+          />
+        ) : (
+          <DialFace
+            hand={value}
+            handDeg={value === null && !turning ? undefined : deg}
+            bezelDeg={deg}
+            turning={turning}
+            selected={value}
+            centerText={value === null ? '–' : String(value)}
+          />
+        )}
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => {
-          const p = polar(70, markerAngle(n));
+          const p = spec ? scoreTarget(spec, n) : polar(70, markerAngle(n));
           return (
             <button
               key={n}

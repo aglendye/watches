@@ -179,3 +179,32 @@ export function deriveArt(w: ArtInput): ArtSpec {
     roman: w.brand_name.toLowerCase() === 'cartier' || /wimbledon/.test(nickname),
   };
 }
+
+// ---- Rating-dial geometry (viewBox 0 0 200 200, centre 100,100) ----
+
+/** Half-width and half-height of the dial opening for each case shape; round shapes use a radius. */
+export function dialBox(shape: Shape): { round: true; r: number } | { round: false; hw: number; hh: number } {
+  if (shape === 'square') return { round: false, hw: 74, hh: 74 };
+  if (shape === 'rect') return { round: false, hw: 42, hh: 74 };
+  return { round: true, r: shape === 'octagon' ? 70 : 72 };
+}
+
+/**
+ * Distance from the centre to the dial's edge along an angle (degrees clockwise
+ * from 12), less `inset`. Score markers sit on this line, so they follow a
+ * square or rectangular dial as well as a round one.
+ */
+export function edgeDistance(shape: Shape, deg: number, inset: number): number {
+  const box = dialBox(shape);
+  if (box.round) return box.r - inset;
+  const a = (deg * Math.PI) / 180;
+  const sx = Math.abs(Math.sin(a)), cy = Math.abs(Math.cos(a));
+  const hw = box.hw - inset, hh = box.hh - inset;
+  return Math.min(sx < 1e-9 ? Infinity : hw / sx, cy < 1e-9 ? Infinity : hh / cy);
+}
+
+/** Point at `dist` from the centre along `deg`. */
+export function polarPoint(dist: number, deg: number) {
+  const a = (deg * Math.PI) / 180;
+  return { x: 100 + dist * Math.sin(a), y: 100 - dist * Math.cos(a) };
+}

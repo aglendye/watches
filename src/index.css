@@ -1,47 +1,52 @@
 @import 'tailwindcss';
 
-/* Design tokens. One accent; light and dark follow the system setting. */
-/* Design tokens, inspired by classic luxury-watch marketing: deep green,
-   champagne gold, cream; light, airy display type. No brand marks.
-   Light and dark follow the system setting. */
+/* Design tokens in Rolex's house colours: Rolex green, gold and cream, with a
+   serif display face (Cormorant Garamond) and small tracked capitals.
+   No logos or brand marks. Light and dark follow the system setting. */
 :root {
-  --bg: #f6f3ec;
+  --bg: #f4efea;
   --surface: #ffffff;
-  --surface-2: #ede8dd;
-  --text: #1a1a16;
-  --muted: #6a685f;
-  --accent: #0b5a3c;
+  --surface-2: #ebe4da;
+  --text: #212121;
+  --muted: #66625a;
+  --accent: #006039;
   --accent-text: #ffffff;
-  --accent-soft: #e0ebe3;
-  --gold: #8f6b22;
+  --accent-soft: #dde9e2;
+  --gold: #8a6a22;
   --danger: #b3261e;
-  --border: #e0dacd;
+  --border: #ddd3c4;
   --dial-face: #fbf9f4;
   --dial-ink: #1f2a24;
-  --dial-hand: #0b5a3c;
-  --hero-1: #fbf9f3;
-  --hero-2: #e6e0d2;
+  --dial-hand: #006039;
+  --hero-1: #ffffff;
+  --hero-2: #e6ddcd;
+  --bar: #006039;
+  --bar-text: #e8f0ea;
+  --bar-active: #e6c87a;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #080c0a;
-    --surface: #0f1713;
-    --surface-2: #17221c;
-    --text: #f3efe4;
-    --muted: #a7a99e;
-    --accent: #cfae6a;
-    --accent-text: #15120a;
-    --accent-soft: #2c261a;
-    --gold: #cfae6a;
+    --bg: #03170e;
+    --surface: #062619;
+    --surface-2: #0b3222;
+    --text: #f4efea;
+    --muted: #a8bdb1;
+    --accent: #d2ad5c;
+    --accent-text: #1a1408;
+    --accent-soft: #2d2814;
+    --gold: #d2ad5c;
     --danger: #ff8a80;
-    --border: #233029;
-    --dial-face: #0d3324;
-    --dial-ink: #f3efe4;
-    --dial-hand: #cfae6a;
-    --hero-1: #155238;
-    --hero-2: #070b09;
+    --border: #154832;
+    --dial-face: #0b3222;
+    --dial-ink: #f4efea;
+    --dial-hand: #d2ad5c;
+    --hero-1: #127749;
+    --hero-2: #03170e;
+    --bar: #021109;
+    --bar-text: #a8bdb1;
+    --bar-active: #d2ad5c;
     color-scheme: dark;
   }
 }
@@ -58,6 +63,10 @@
   --color-danger: var(--danger);
   --color-line: var(--border);
   --color-gold: var(--gold);
+  --color-bar: var(--bar);
+  --color-bar-text: var(--bar-text);
+  --color-bar-active: var(--bar-active);
+  --font-serif: 'Cormorant Garamond', 'Iowan Old Style', 'Palatino', Georgia, serif;
   --radius-card: 0.75rem;
   --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
@@ -108,8 +117,17 @@ body {
 
 /* Large, light headings. */
 .display {
-  font-weight: 300;
-  letter-spacing: -0.015em;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  line-height: 1.1;
+}
+
+/* Serif for watch names and titles. */
+.serif {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: 0.005em;
 }
 
 /* Spotlight behind the watch picture. */

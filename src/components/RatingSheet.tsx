@@ -5,6 +5,7 @@ import { formatDate, localToday } from '../lib/format';
 import { useCreateRating, useDeleteRating, useUpdateRating } from '../lib/queries';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Dial } from './Dial';
+import type { ArtInput } from '../lib/watchArt';
 import { Sheet } from './Sheet';
 import { useToast } from './Toast';
 import { Button, FormError } from './ui';
@@ -16,6 +17,8 @@ interface Props {
   onClose(): void;
   watchId: string;
   watchTitle: string;
+  /** The watch, so the dial is drawn as it. */
+  watch?: ArtInput;
   /** The viewer's latest entry for this watch, shown above the dial when adding a new one. */
   latest?: Pick<RatingEntry, 'score' | 'rated_on'> | null;
   /** Edit mode: the entry being edited. */
@@ -29,7 +32,7 @@ export function validateRating(score: number | null, ratedOn: string, today = lo
   return null;
 }
 
-export function RatingSheet({ open, onClose, watchId, watchTitle, latest, entry }: Props) {
+export function RatingSheet({ open, onClose, watchId, watchTitle, watch, latest, entry }: Props) {
   const reviewId = useId();
   const dateId = useId();
   const toast = useToast();
@@ -97,7 +100,7 @@ export function RatingSheet({ open, onClose, watchId, watchTitle, latest, entry 
               {formatDate(latest.rated_on, { short: true })}
             </p>
           )}
-          <Dial value={score} onChange={setScore} />
+          <Dial value={score} onChange={setScore} watch={watch} />
           <div>
             <label htmlFor={reviewId} className="mb-1 block text-sm font-medium">
               Review <span className="font-normal text-muted">(optional)</span>

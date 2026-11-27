@@ -16,7 +16,7 @@ export function WatchRow({ w }: { w: SearchResult }) {
         className="size-14 shrink-0 rounded-lg"
       />
       <div className="min-w-0 flex-1">
-        <p className="line-clamp-2 leading-snug font-semibold">{t.title}</p>
+        <p className="serif line-clamp-2 text-lg leading-tight">{t.title}</p>
         {w.nickname && <p className="text-sm leading-snug font-medium text-gold">“{w.nickname}”</p>}
         <p className={`truncate text-sm ${t.hasReference ? 'tabular text-muted' : 'text-muted italic'}`}>
           {t.hasReference ? t.subtitle : 'reference not specified'}
@@ -43,7 +43,7 @@ export function WatchCard({ w }: { w: CatalogWatch }) {
       </div>
       <div className="min-w-0">
         <p className="label truncate !text-[0.7rem]">{w.brand_name}</p>
-        <p className="line-clamp-2 leading-snug font-semibold">{w.model_name}</p>
+        <p className="serif line-clamp-2 text-lg leading-tight">{w.model_name}</p>
         {nickname && <p className="truncate text-sm font-medium text-gold">“{nickname}”</p>}
         <p className="mt-0.5 truncate text-sm text-muted">
           {w.avg_score === null ? 'Not rated yet' : `${w.avg_score.toFixed(1)} avg`}

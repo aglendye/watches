@@ -31,6 +31,14 @@ Adam asked for 500 to 1,000 seeded watches from brands like Rolex, Omega, Breitl
 - Nicknames are shown on their own line (accent colour) in search results, Recently added cards and the watch page.
 - The installed app checks for a new version whenever it returns to the foreground and reloads once if the deployed bundle has changed (`src/lib/update.ts`).
 
+### Rolex colours, serif type, watch-shaped rating dial (Adam, Nov 26)
+
+- **Colours:** Rolex's house palette: Rolex green (#006039, with #127749 for the dark-mode spotlight), gold, and Rolex cream (#f4efea). Dark mode is a very deep green rather than black; the tab bar is solid green with gold for the current tab. No logos, crown or wordmark.
+- **Type:** Cormorant Garamond (open font licence, bundled with the app, no outside requests) for headings, watch names, sheet titles and scores; small tracked capitals for labels and the tab bar; the system font for body text so iPhone text-size settings still apply.
+- **Rating dial = the watch:** the rating dial (and the community-score dial on the watch page) is the watch's own drawing: case shape, bezel and dial colours, with ten score markers in place of the hours and a gold hand. Turning it turns the watch's bezel (the GMT or dive insert rotates). Roman-numeral dials (Cartier, Wimbledon) show numerals only. The rating dial is always the drawing, even when the watch has an uploaded photo; the photo only replaces the picture at the top of the watch page and in lists.
+- **Taps go by angle:** a tap anywhere on the dial picks the nearest number by angle, like turning does, so narrow rectangular dials work (their numbers sit too close for separate tap targets). The marker buttons remain for keyboard and VoiceOver.
+- **A new watch with no photo** is drawn from whatever was typed: words in the model name (Submariner, Daytona, Tank, Royal Oak…), the reference suffix and any specs or nickname added later. With nothing to go on it's a plain round steel watch with a dark dial; editing details updates the drawing.
+
 ### Look and feel, turning dial, seeding rules (Adam, Nov 26)
 
 - **Theme:** styled after classic luxury-watch marketing without using any brand's marks: deep green, champagne gold and cream; light, large headings; gold small-caps labels; pill buttons; a green spotlight behind watch pictures in dark mode (cream in light mode). Dark mode keeps the near-black base. App icons regenerated in the same colours.
