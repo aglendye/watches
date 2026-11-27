@@ -2,6 +2,38 @@
 
 Running log for the maintainer. Newest phase at the top. "Spec" means the AI Agent Build Specification; "PRD" means the Product Requirements Document.
 
+## Rolex scrape and nickname backfill (Adam, Nov 27)
+
+Two phases, both live. Adam chose: Rolex only, one entry per reference (not per dial version).
+
+### Phase 1: nickname backfill (migration 008)
+
+- Every seeded nickname was reviewed. 84 rows changed: variant names that had been stored as nicknames ("Pasha Seatimer", "Black Bay 41", "Offshore Chronograph 44", "Travel Time") moved to `aka` (still searchable); descriptions ("Diamonds", "Bangle", "Burgundy", "Navy Blue", "S&G") moved to `note` or `dial_color`. They had been showing in orange as if they were nicknames.
+- New names only where two independent sources agree:
+  - 126619LB "Cookie Monster", also "Smurf" (Bob's Watches, Fashionphile). 126618LB lost "Cookie Monster", which belonged to the white-gold watch.
+  - 6542 also "Pussy Galore" (Bob's Watches, Revolution); it stays "Bakelite".
+  - 16520 is now "Zenith".
+  - Every Rolex Day-Date is also "President".
+- Removed non-nicknames: "Datejust II" (now aka), "Land-Dweller 36/40", "Explorer 40" (aka), "Deepsea Challenge" (aka), "Jubilee Gold" (it's the case metal), "Green crystal" (aka GV, note).
+- Same guard as 007: a row only changes while its nickname is still the seeded text, and the edit stamp is paused.
+- Catalog: 55 real nicknames, 79 watches with other names, 41 with notes.
+
+### Phase 2: Rolex batch (`db/seed/batches/2026-11-rolex.csv`, 158 watches)
+
+- Built by `db/seed/research/rolex_2026_11.py`. Current references come from rolex.com's "all models" pages (sizes and metals for every family). Discontinued references come from collector reference tables (Bob's Watches, Luxury Bazaar, Fratello, Watch Guys, Revolution, Bucherer). Uncertain ones were checked individually (Triple Six, Le Mans, Rainbow, King Sub, Cellini Date/Dual Time, Yacht-Master II 116689).
+- Covers vintage Submariners (6204 to 5517 "MilSub", 5514 COMEX), gold and two-tone Subs, 16660 "Triple Six", Deepsea 136668LB, vintage and gold GMT-Masters, manual-wind and Zenith-era Daytonas, Rainbow Daytonas, 126529LN "Le Mans", current gem-set Daytonas, Datejust/Lady-Datejust/Day-Date (current and older), Day-Date II, Explorer 6350/6610, Milgauss 6541, Air-King, Yacht-Master/II, Sky-Dweller, Oyster Perpetual, Cellini Date and Dual Time, Turn-O-Graph incl. 1625 "Thunderbird", Oysterquartz, and the rest of the Land-Dweller range.
+- Metal comes from Rolex's last reference digit (0 steel, 1 Everose Rolesor, 3 yellow Rolesor, 4 white Rolesor, 5 Everose, 6 platinum, 8 yellow gold, 9 white gold), except four-digit vintage references, which are set by hand. Dial colour is only filled where the reference fixes it; years and calibres only where a source gave them.
+- New models: Oyster Perpetual 26, Cellini Date, Cellini Dual Time, Oysterquartz.
+- Result: 158 rows, 158 new, 0 skipped; catalog 768 → 926 watches. Seeded, so none of it appears in the feed.
+
+### Seed tool: slashes now count
+
+- Duplicate matching ignored all punctuation, so vintage "1675/3" (two-tone GMT, 1960s–70s) matched the 1980s "16753", and "1680/8" matched "16808". Matching now keeps "/" (`scripts/seed.mjs`). The whole existing catalog still matches itself (`--check catalog.csv`: 0 new).
+
+### Drawings: gem-set bezels
+
+- `watchArt.ts` draws a ring of stones when the reference ends in RBR/TBR (diamonds), RBOW (rainbow sapphires) or SA… (sapphires), or the bezel text says gem-set, diamond or sapphire-set. Unit test added.
+
 ## After Phase 2: review fixes (Adam, Nov 27)
 
 From a whole-app review. Adam chose the order: seed activity, nicknames, person pages, back links, browsing. A big Rolex scrape is coming, so each fix had to keep working as the catalog grows.

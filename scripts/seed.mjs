@@ -58,7 +58,8 @@ function valuesRow(r, i = 0) {
 
 // Names and references are compared ignoring case, spaces and punctuation, so
 // "GMT Master II" matches "GMT-Master II" and "126710-BLRO" matches "126710BLRO".
-const norm = (x) => `regexp_replace(lower(coalesce(${x}, '')), '[^a-z0-9]', '', 'g')`;
+// A slash is kept: vintage Rolex "1675/3" is a different watch from "16753".
+const norm = (x) => `regexp_replace(lower(coalesce(${x}, '')), '[^a-z0-9/]', '', 'g')`;
 const SEED_USER = `(select id from auth.users where email = '${SEED_EMAIL}')`;
 
 /**

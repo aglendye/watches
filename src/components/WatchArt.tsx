@@ -74,6 +74,17 @@ function Bezel({ s }: { s: ArtSpec }) {
           })}
         </g>
       );
+    case 'gems':
+      return (
+        <g>
+          <circle cx={CX} cy={CY} r={(R1 + R2) / 2} fill="none" stroke={s.bezelMetal} strokeWidth={R2 - R1} />
+          {Array.from({ length: 36 }, (_, i) => {
+            const p = pt((R1 + R2) / 2, i * 10);
+            const color = b.colors[b.colors.length > 2 ? Math.floor((i / 36) * b.colors.length) : i % b.colors.length];
+            return <circle key={i} cx={p.x} cy={p.y} r={4.6} fill={color} stroke="#00000030" strokeWidth={0.6} />;
+          })}
+        </g>
+      );
     default:
       return <circle cx={CX} cy={CY} r={(R1 + R2) / 2 - 3} fill="none" stroke={s.bezelMetal} strokeWidth={R2 - R1 - 6} />;
   }

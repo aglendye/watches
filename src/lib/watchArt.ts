@@ -17,6 +17,7 @@ export type Bezel =
   | { kind: 'tachy'; color: string }
   | { kind: 'fluted' }
   | { kind: 'slide' }
+  | { kind: 'gems'; colors: string[] }
   | { kind: 'smooth' };
 
 export interface ArtSpec {
@@ -101,6 +102,8 @@ function isLight(hex: string): boolean {
   return 0.299 * r + 0.587 * g + 0.114 * b > 150;
 }
 
+const RAINBOW = ['#d23b3b', '#e8812f', '#e8c33a', '#5cb85c', '#2f8fd2', '#4a4fc2', '#9a4fc2'];
+
 // Two-colour 24-hour bezels: night half on top, day half on the bottom.
 const GMT_CODES: Record<string, [string, string]> = {
   BLRO: [C.blue, C.red], // Pepsi
@@ -137,7 +140,12 @@ export function deriveArt(w: ArtInput): ArtSpec {
 
   let bezel: Bezel = { kind: 'smooth' };
   const code = Object.keys(GMT_CODES).find((k) => ref.endsWith(k));
-  if (code) bezel = { kind: 'gmt', top: GMT_CODES[code][0], bottom: GMT_CODES[code][1] };
+  // Gem-set bezels: Rolex marks them in the reference (RBR/TBR diamonds,
+  // RBOW rainbow sapphires, SA… sapphires) or the bezel text says so.
+  if (/RBOW$/.test(ref) || /rainbow/.test(bezelText)) bezel = { kind: 'gems', colors: RAINBOW };
+  else if (/SA(BR|NR|RU|TS)$/.test(ref) || /sapphire-set/.test(bezelText)) bezel = { kind: 'gems', colors: ['#2b54c9', '#e9eef5'] };
+  else if (/(RBR|TBR)$/.test(ref) || /gem-set|diamond/.test(bezelText)) bezel = { kind: 'gems', colors: ['#f4f7fb'] };
+  else if (code) bezel = { kind: 'gmt', top: GMT_CODES[code][0], bottom: GMT_CODES[code][1] };
   else if (/pepsi/.test(nickname)) bezel = { kind: 'gmt', top: C.blue, bottom: C.red };
   else if (/coke|fat lady/.test(nickname) || /red\/black/.test(bezelText)) bezel = { kind: 'gmt', top: C.black, bottom: C.red };
   else if (/root beer/.test(nickname)) bezel = { kind: 'gmt', top: C.brown, bottom: C.black };

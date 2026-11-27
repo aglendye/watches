@@ -7,6 +7,15 @@ const rolex = (model: string, reference: string, extra: Record<string, unknown> 
 });
 
 describe('drawn dials', () => {
+  it('draws gem-set bezels from the reference suffix', () => {
+    const rainbow = deriveArt(rolex('Cosmograph Daytona', '116595RBOW', { bezel: 'Rainbow sapphire-set' }, '18k Everose gold', ''));
+    expect(rainbow.bezel).toMatchObject({ kind: 'gems' });
+    expect((rainbow.bezel as { colors: string[] }).colors.length).toBeGreaterThan(5);
+    expect(deriveArt(rolex('Day-Date 40', '228348RBR', {}, '18k yellow gold', '')).bezel).toEqual({ kind: 'gems', colors: ['#f4f7fb'] });
+    expect(deriveArt(rolex('Submariner Date', '116659SABR', { bezel: 'Sapphire-set' }, '18k white gold')).bezel).toMatchObject({ kind: 'gems' });
+    expect(deriveArt(rolex('Day-Date 40', '228238', { bezel: 'Fluted' }, '18k yellow gold')).bezel).toEqual({ kind: 'fluted' });
+  });
+
   it('draws GMT bezels from the reference code, night half on top', () => {
     const pepsi = deriveArt(rolex('GMT-Master II', '126710BLRO'));
     expect(pepsi.bezel).toEqual({ kind: 'gmt', top: '#1f3f7a', bottom: '#b3262e' });

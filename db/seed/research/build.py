@@ -14,9 +14,10 @@ for line in legacy.splitlines():
     row = {k: '' for k in FIELDS}; row.update(brand=b, model=m, reference=ref); ROWS.append(row)
     seen_models.add((b.lower(), m.lower()))
 # One nickname per watch (see nickname_fixes.py)
-from nickname_fixes import FIXES
+from nickname_fixes import FIXES, FIXES_2
 from common import nickname_problem
 fix_by = {(b.lower(), ref.lower()): (n, a, note, d) for b, ref, n, a, note, d in FIXES}
+fix_by.update({(b.lower(), ref.lower()): (n, a, note, d) for b, ref, _old, n, a, note, d in FIXES_2})
 for r in ROWS:
     f = fix_by.get((r['brand'].lower(), r['reference'].lower()))
     if f:
@@ -25,6 +26,9 @@ for r in ROWS:
         r['aka'] = a or r.get('aka', '')
         r['note'] = note or r.get('note', '')
         if d and not r['dial_color']: r['dial_color'] = d
+for r in ROWS:  # every Day-Date is a "President"
+    if r['brand'] == 'Rolex' and r['model'].startswith('Day-Date') and not r.get('aka'):
+        r['aka'] = 'President'
 # Validate
 errs = []; keys = set()
 for r in ROWS:
