@@ -8,6 +8,9 @@ import {
 } from '@tanstack/react-query';
 import type {
   CollectionItem,
+  ListDetail,
+  ListSummary,
+  MyListForWatch,
   CommunityRating,
   OwnershipInput,
   WatchOwner,
@@ -166,3 +169,43 @@ export const useUpdateOwnership = () =>
   useWrite((p: OwnershipInput & { id: string }) => call<{ ok: true }>('ownerships.update', { ...p }));
 
 export const useDeleteOwnership = () => useWrite((id: string) => call<{ ok: true }>('ownerships.delete', { id }));
+
+// ---------------------------------------------------------------------
+// Lists (M8)
+// ---------------------------------------------------------------------
+export function useLists() {
+  return useQuery({ queryKey: ['lists'], queryFn: () => call<ListSummary[]>('lists.index'), staleTime: LIST_STALE });
+}
+
+export function useList(id: string) {
+  return useQuery({ queryKey: ['list', id], queryFn: () => call<ListDetail>('lists.get', { id }) });
+}
+
+export function useMyListsForWatch(watchId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['listsForWatch', watchId],
+    queryFn: () => call<MyListForWatch[]>('lists.forWatch', { watchId }),
+    enabled,
+  });
+}
+
+export interface ListInput {
+  name: string;
+  description: string;
+}
+
+export const useCreateList = () =>
+  useWrite((p: ListInput & { watchId?: string }) => call<{ id: string }>('lists.create', { ...p }));
+
+export const useUpdateList = () => useWrite((p: ListInput & { id: string }) => call<{ ok: true }>('lists.update', { ...p }));
+
+export const useDeleteList = () => useWrite((id: string) => call<{ ok: true }>('lists.delete', { id }));
+
+export const useAddListItem = () =>
+  useWrite((p: { listId: string; watchId: string }) => call<{ ok: true }>('listItems.add', p));
+
+export const useRemoveListItem = () =>
+  useWrite((p: { listId: string; watchId: string }) => call<{ ok: true }>('listItems.remove', p));
+
+export const useUpdateListNote = () =>
+  useWrite((p: { listId: string; watchId: string; note: string }) => call<{ ok: true }>('listItems.updateNote', p));

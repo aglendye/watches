@@ -1,6 +1,7 @@
 // Every API action. The app calls POST /api/rpc with { action, params }.
 // Actions in `publicActions` work signed out; everything else needs a session
 // and runs under row-level security as that user (see db.ts).
+import { randomUUID } from 'node:crypto';
 import { asOwner, asUser, q, type Query, type Row } from './db.js';
 import { ApiError, badRequest, forbidden, notFound, notSignedIn, tooMany } from './errors.js';
 import {
@@ -74,6 +75,15 @@ function ownershipInput(p: Params) {
   const sold = v.optPastDate(p, 'soldOn', 'sold date');
   if (acquired && sold && sold < acquired) throw badRequest('The sold date can’t be before the acquired date.');
   return [acquired, sold, v.optStr(p, 'notes', 1000)] as const;
+}
+
+const LIST_COLS = `l.id, l.user_id, l.name, l.description, l.created_at, l.updated_at,
+  (l.user_id = auth.uid()) as is_mine`;
+
+function listInput(p: Params) {
+  const name = v.str(p, 'name', { max: 80 });
+  if (!name) throw badRequest('Give the list a name.');
+  return [name, v.optStr(p, 'description', 500)] as const;
 }
 
 const RATING_COLS = `r.id, r.user_id, r.watch_id, r.score, r.review_text, r.rated_on::text as rated_on, r.created_at`;
@@ -426,6 +436,8 @@ export const userActions: Record<string, Action> = {
   },
 
   async 'home.feed'(_p, ctx) {
+    // Built from the tables (no events table): ratings, new watches, new
+    // lists. Ownership is deliberately left out (PRD 5.11).
     const [rows] = await user(
       ctx,
       q(
@@ -433,22 +445,28 @@ export const userActions: Record<string, Action> = {
            (select 'rating' as kind, r.id, r.created_at, r.user_id, p.display_name, r.watch_id,
                    b.name as brand_name, m.name as model_name, w.reference,
                    w.case_material, w.dial_color, w.extras,
-                   r.score, left(r.review_text, 141) as snippet
+                   r.score, left(r.review_text, 141) as snippet,
+                   null::uuid as list_id, null::text as list_name
               from public.ratings r
               join public.profiles p on p.id = r.user_id
               join public.watches w on w.id = r.watch_id
-              join public.models m on m.id = w.model_id
-              join public.brands b on b.id = m.brand_id
+              ${WATCH_JOINS}
              order by r.created_at desc limit 30)
            union all
            (select 'watch', w.id, w.created_at, w.created_by, p.display_name, w.id,
                    b.name, m.name, w.reference, w.case_material, w.dial_color, w.extras,
-                   null::smallint, null::text
+                   null::smallint, null::text, null::uuid, null::text
               from public.watches w
               join public.profiles p on p.id = w.created_by
-              join public.models m on m.id = w.model_id
-              join public.brands b on b.id = m.brand_id
+              ${WATCH_JOINS}
              order by w.created_at desc limit 30)
+           union all
+           (select 'list', l.id, l.created_at, l.user_id, p.display_name, null::uuid,
+                   null::text, null::text, null::text, null::text, null::text, null::jsonb,
+                   null::smallint, null::text, l.id, l.name
+              from public.lists l
+              join public.profiles p on p.id = l.user_id
+             order by l.created_at desc limit 30)
          ) f
          order by created_at desc
          limit 30`,
@@ -538,6 +556,149 @@ export const userActions: Record<string, Action> = {
   async 'ownerships.delete'(p, ctx) {
     const [rows] = await user(ctx, q('delete from public.ownerships where id = $1 returning id', v.uuid(p, 'id')));
     if (!rows[0]) throw forbidden('You can only remove watches from your own collection.');
+    return { ok: true };
+  },
+
+  // -------------------------------------------------------------------
+  // lists (M8)
+  // -------------------------------------------------------------------
+  async 'lists.index'(_p, ctx) {
+    const [rows] = await user(
+      ctx,
+      q(
+        `select ${LIST_COLS}, pr.display_name,
+                (select count(*) from public.list_items i where i.list_id = l.id)::int as item_count,
+                coalesce((
+                  select jsonb_agg(x) from (
+                    select ${WATCH_ART_COLS}
+                      from public.list_items i
+                      join public.watches w on w.id = i.watch_id
+                      ${WATCH_JOINS}
+                     where i.list_id = l.id
+                     order by i.added_at desc
+                     limit 3) x
+                ), '[]'::jsonb) as preview
+           from public.lists l
+           join public.profiles pr on pr.id = l.user_id
+          order by (l.user_id = auth.uid()) desc, l.created_at desc`,
+      ),
+    );
+    return rows;
+  },
+
+  async 'lists.get'(p, ctx) {
+    const id = v.uuid(p, 'id');
+    const [lists, items] = await user(
+      ctx,
+      q(
+        `select ${LIST_COLS}, pr.display_name
+           from public.lists l join public.profiles pr on pr.id = l.user_id
+          where l.id = $1`,
+        id,
+      ),
+      q(
+        `select i.watch_id, i.note, i.added_at, ${WATCH_ART_COLS}
+           from public.list_items i
+           join public.watches w on w.id = i.watch_id
+           ${WATCH_JOINS}
+          where i.list_id = $1
+          order by i.added_at desc`,
+        id,
+      ),
+    );
+    if (!lists[0]) throw notFound('This list doesn’t exist (it may have been deleted).');
+    return { ...lists[0], items };
+  },
+
+  async 'lists.create'(p, ctx) {
+    const [name, description] = listInput(p);
+    const watchId = p.watchId === undefined || p.watchId === null ? null : v.uuid(p, 'watchId');
+    const id = randomUUID();
+    const queries = [
+      q('insert into public.lists (id, name, description) values ($1, $2, $3)', id, name, description),
+    ];
+    if (watchId) queries.push(q('insert into public.list_items (list_id, watch_id) values ($1, $2)', id, watchId));
+    await user(ctx, ...queries);
+    return { id };
+  },
+
+  async 'lists.update'(p, ctx) {
+    const id = v.uuid(p, 'id');
+    const [name, description] = listInput(p);
+    const [rows] = await user(
+      ctx,
+      q('update public.lists set name = $2, description = $3 where id = $1 returning id', id, name, description),
+    );
+    if (!rows[0]) throw forbidden('Only the person who made this list can change it.');
+    return { ok: true };
+  },
+
+  async 'lists.delete'(p, ctx) {
+    const [rows] = await user(ctx, q('delete from public.lists where id = $1 returning id', v.uuid(p, 'id')));
+    if (!rows[0]) throw forbidden('Only the person who made this list can delete it.');
+    return { ok: true };
+  },
+
+  async 'lists.forWatch'(p, ctx) {
+    const watchId = v.uuid(p, 'watchId');
+    const [rows] = await user(
+      ctx,
+      q(
+        `select l.id, l.name,
+                (select count(*) from public.list_items i where i.list_id = l.id)::int as item_count,
+                exists (select 1 from public.list_items i where i.list_id = l.id and i.watch_id = $1) as contains
+           from public.lists l
+          where l.user_id = auth.uid()
+          order by l.created_at desc`,
+        watchId,
+      ),
+    );
+    return rows;
+  },
+
+  async 'listItems.add'(p, ctx) {
+    const listId = v.uuid(p, 'listId');
+    const watchId = v.uuid(p, 'watchId');
+    // owns_list() first: a clear message instead of a policy error.
+    const [[own]] = await user(ctx, q('select public.owns_list($1) as ok', listId));
+    if (!own.ok) throw forbidden('You can only add watches to your own lists.');
+    await user(
+      ctx,
+      q(
+        `insert into public.list_items (list_id, watch_id, note) values ($1, $2, $3)
+         on conflict (list_id, watch_id) do nothing`,
+        listId,
+        watchId,
+        v.optStr(p, 'note', 280),
+      ),
+    );
+    return { ok: true };
+  },
+
+  async 'listItems.remove'(p, ctx) {
+    const [rows] = await user(
+      ctx,
+      q(
+        'delete from public.list_items where list_id = $1 and watch_id = $2 returning list_id',
+        v.uuid(p, 'listId'),
+        v.uuid(p, 'watchId'),
+      ),
+    );
+    if (!rows[0]) throw forbidden('You can only change your own lists.');
+    return { ok: true };
+  },
+
+  async 'listItems.updateNote'(p, ctx) {
+    const [rows] = await user(
+      ctx,
+      q(
+        'update public.list_items set note = $3 where list_id = $1 and watch_id = $2 returning list_id',
+        v.uuid(p, 'listId'),
+        v.uuid(p, 'watchId'),
+        v.optStr(p, 'note', 280),
+      ),
+    );
+    if (!rows[0]) throw forbidden('You can only change your own lists.');
     return { ok: true };
   },
 };

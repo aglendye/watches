@@ -58,26 +58,69 @@ export function WatchCard({ w }: { w: CatalogWatch }) {
   );
 }
 
+export function ListGlyph({ className = 'size-6' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path d="M4 5l3 3 3-3z" fill="var(--accent)" />
+      <path d="M12 6.5h8M4 12h16M4 17.5h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" />
+    </svg>
+  );
+}
+
 export function FeedItem({ item, meId }: { item: Feed; meId: string }) {
   const who = item.user_id === meId ? 'You' : item.display_name;
+  const when = <time dateTime={item.created_at}>{relativeTime(item.created_at)}</time>;
+
+  if (item.kind === 'list') {
+    return (
+      <li>
+        <Link to={`/lists/${item.list_id}`} className="flex min-h-11 items-center gap-3 border-b border-line py-2.5">
+          <div className="hero grid size-12 shrink-0 place-items-center text-ink">
+            <ListGlyph />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[0.9375rem] leading-snug">
+              <span className="font-semibold">{who}</span> created the list{' '}
+              <span className="font-semibold text-accent">{item.list_name}</span>
+            </p>
+            <p className="mt-0.5 truncate text-xs text-muted">{when}</p>
+          </div>
+          <span className="label shrink-0 !text-[0.625rem]">List</span>
+        </Link>
+      </li>
+    );
+  }
+
   const nickname = nick(item.extras?.nickname);
   const name = nickname ? `the ${nickname}` : `${item.brand_name} ${item.model_name}`;
   const snippet =
     item.snippet && item.snippet.length > 140 ? item.snippet.slice(0, 140).trimEnd() + '…' : item.snippet;
-  const art = { brand_name: item.brand_name, model_name: item.model_name, reference: item.reference, case_material: item.case_material, dial_color: item.dial_color, extras: item.extras };
+  const art = {
+    brand_name: item.brand_name ?? '',
+    model_name: item.model_name ?? '',
+    reference: item.reference,
+    case_material: item.case_material,
+    dial_color: item.dial_color,
+    extras: item.extras,
+  };
+  const verb = item.kind === 'rating' ? 'rated' : item.kind === 'photo' ? 'added a photo of' : 'added';
   return (
     <li>
       <Link to={`/watch/${item.watch_id}`} className="flex min-h-11 items-center gap-3 border-b border-line py-2.5">
-        <div className="hero grid size-12 shrink-0 place-items-center">
-          <WatchImage watch={art} className="size-10" />
+        <div className="hero grid size-12 shrink-0 place-items-center overflow-hidden">
+          {item.kind === 'photo' && item.image_url ? (
+            <img src={item.image_url} alt="" className="size-12 object-cover" loading="lazy" decoding="async" />
+          ) : (
+            <WatchImage watch={art} photoUrl={item.primary_image_url} className="size-10" />
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[0.9375rem] leading-snug">
-            <span className="font-semibold">{who}</span> {item.kind === 'rating' ? 'rated' : 'added'} {name}
+            <span className="font-semibold">{who}</span> {verb} {name}
           </p>
           <p className="mt-0.5 truncate text-xs text-muted">
             {nickname ? `${item.model_name} · ` : ''}
-            <time dateTime={item.created_at}>{relativeTime(item.created_at)}</time>
+            {when}
           </p>
           {snippet && <p className="mt-1 line-clamp-2 text-sm text-muted">“{snippet}”</p>}
         </div>
@@ -86,7 +129,7 @@ export function FeedItem({ item, meId }: { item: Feed; meId: string }) {
             {item.score}
           </span>
         ) : (
-          <span className="label shrink-0 !text-[0.625rem]">New</span>
+          <span className="label shrink-0 !text-[0.625rem]">{item.kind === 'photo' ? 'Photo' : 'New'}</span>
         )}
       </Link>
     </li>

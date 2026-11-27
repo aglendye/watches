@@ -11,6 +11,7 @@ import { Auth } from './screens/Auth';
 import { Diary } from './screens/Diary';
 import { EditWatch } from './screens/EditWatch';
 import { Home } from './screens/Home';
+import { ListDetailScreen, Lists } from './screens/Lists';
 import { Me } from './screens/Me';
 import { Search, SearchLayout } from './screens/Search';
 import { Watch } from './screens/Watch';
@@ -98,6 +99,8 @@ export function AppRoutes() {
           <Route path="/diary" element={<Diary />} />
           <Route path="/me" element={<Me />} />
           <Route path="/collection" element={<Collection />} />
+          <Route path="/lists" element={<Lists />} />
+          <Route path="/lists/:id" element={<ListDetailScreen />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

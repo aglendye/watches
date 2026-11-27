@@ -88,3 +88,88 @@ describe('M7 ownership', () => {
     await admin.call('watches.delete', { id: id2 });
   });
 });
+
+describe('M8 lists', () => {
+  let grails: string;
+  let omegaId: string;
+
+  it('create a list with a watch in it, then add, note and remove items', async () => {
+    omegaId = (await bob.call('watches.add', { brand: 'Omega', model: 'Speedmaster Professional' })).id;
+    grails = (await bob.call('lists.create', { name: '  Grails ', description: 'One day', watchId })).id;
+    await bob.call('listItems.add', { listId: grails, watchId: omegaId });
+    await bob.call('listItems.add', { listId: grails, watchId: omegaId }); // twice is a no-op
+    await bob.call('listItems.updateNote', { listId: grails, watchId: omegaId, note: 'Moonwatch' });
+    const l = await alice.call('lists.get', { id: grails });
+    expect(l).toMatchObject({ name: 'Grails', description: 'One day', display_name: 'Bob', is_mine: false });
+    expect(l.items.map((i: any) => i.model_name)).toEqual(['Speedmaster Professional', 'GMT-Master II']); // newest first
+    expect(l.items[0].note).toBe('Moonwatch');
+    expect(l.items[1].extras.nickname).toBe('Batman');
+
+    const forWatch = await bob.call('lists.forWatch', { watchId: omegaId });
+    expect(forWatch).toEqual([{ id: grails, name: 'Grails', item_count: 2, contains: true }]);
+    expect(await alice.call('lists.forWatch', { watchId: omegaId })).toEqual([]);
+  });
+
+  it('a watch appears once per list', async () => {
+    await expect(
+      sqlAs(bob, `insert into public.list_items (list_id, watch_id) values ($1, $2)`, [grails, watchId]),
+    ).rejects.toMatchObject({ code: '23505' });
+  });
+
+  it('index shows everyone’s lists, mine first, with counts and previews', async () => {
+    const mineId = (await alice.call('lists.create', { name: 'Wishlist' })).id;
+    const idx = await alice.call('lists.index');
+    expect(idx.map((x: any) => x.name)).toEqual(['Wishlist', 'Grails']);
+    expect(idx[0]).toMatchObject({ is_mine: true, item_count: 0, preview: [] });
+    expect(idx[1]).toMatchObject({ is_mine: false, display_name: 'Bob', item_count: 2 });
+    expect(idx[1].preview[0].model_name).toBe('Speedmaster Professional');
+    await alice.call('lists.delete', { id: mineId });
+  });
+
+  it('only the owner can change a list or its items', async () => {
+    await expect(alice.call('lists.update', { id: grails, name: 'Mine now' })).rejects.toMatchObject({ status: 403 });
+    await expect(alice.call('lists.delete', { id: grails })).rejects.toMatchObject({ status: 403 });
+    await expect(alice.call('listItems.add', { listId: grails, watchId })).rejects.toMatchObject({ status: 403 });
+    await expect(alice.call('listItems.remove', { listId: grails, watchId: omegaId })).rejects.toMatchObject({ status: 403 });
+    await expect(alice.call('listItems.updateNote', { listId: grails, watchId: omegaId, note: 'x' })).rejects.toMatchObject({ status: 403 });
+    await expect(
+      sqlAs(alice, `insert into public.list_items (list_id, watch_id) values ($1, $2)`, [grails, (await alice.call('watches.add', { brand: 'Seiko', model: 'SKX007' })).id]),
+    ).rejects.toMatchObject({ code: '42501' });
+    await expect(
+      sqlAs(bob, `update public.lists set user_id = (select id from public.profiles where display_name = 'Alice') where id = $1 returning user_id`, [grails]),
+    ).resolves.toEqual([expect.objectContaining({ user_id: expect.any(String) })]);
+    // ...but the owner never changes (trigger keeps it):
+    const [row] = await sqlOwner(`select p.display_name from public.lists l join public.profiles p on p.id = l.user_id where l.id = $1`, [grails]);
+    expect(row.display_name).toBe('Bob');
+
+    await expect(bob.call('lists.create', { name: '   ' })).rejects.toMatchObject({ status: 400 });
+    await expect(bob.call('lists.create', { name: 'x'.repeat(81) })).rejects.toMatchObject({ status: 400 });
+    await expect(bob.call('listItems.updateNote', { listId: grails, watchId: omegaId, note: 'x'.repeat(281) })).rejects.toMatchObject({ status: 400 });
+    await bob.call('lists.update', { id: grails, name: 'Grails', description: '' });
+    expect((await bob.call('lists.get', { id: grails })).description).toBeNull();
+  });
+
+  it('the feed shows new lists, linked by id', async () => {
+    const feed = await alice.call('home.feed');
+    const item = feed.find((f: any) => f.kind === 'list');
+    expect(item).toMatchObject({ list_id: grails, list_name: 'Grails', display_name: 'Bob', watch_id: null });
+  });
+
+  it("someone else's list blocks the creator deleting the watch", async () => {
+    // Alice created the Batman; Bob's list holds it (and Bob owns it, from M7).
+    const { id } = await alice.call('watches.add', { brand: 'Tudor', model: 'Ranger' });
+    await bob.call('listItems.add', { listId: grails, watchId: id });
+    expect((await alice.call('watches.get', { id })).can_delete).toBe(false);
+    await expect(alice.call('watches.delete', { id })).rejects.toThrow('Other people have');
+    await bob.call('listItems.remove', { listId: grails, watchId: id });
+    await alice.call('watches.delete', { id });
+  });
+
+  it('deleting a list removes its items', async () => {
+    const tmp = (await bob.call('lists.create', { name: 'Temp', watchId: omegaId })).id;
+    await bob.call('lists.delete', { id: tmp });
+    const [n] = await sqlOwner('select count(*)::int as n from public.list_items where list_id = $1', [tmp]);
+    expect(n.n).toBe(0);
+    await expect(bob.call('lists.get', { id: tmp })).rejects.toMatchObject({ status: 404 });
+  });
+});

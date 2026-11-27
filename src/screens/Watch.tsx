@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import type { CommunityRating, Ownership, RatingEntry, WatchDetail, WatchOwner } from '../../shared/types';
 import { WatchArt, WatchImage } from '../components/WatchArt';
+import { AddToListSheet } from '../components/ListSheets';
 import { OwnershipSheet } from '../components/OwnershipSheet';
 import { RatingSheet } from '../components/RatingSheet';
 import { WatchName } from '../components/WatchItems';
@@ -47,6 +48,7 @@ export function Watch() {
   const [person, setPerson] = useState<CommunityRating | null>(null);
   const [owning, setOwning] = useState<{ open: boolean; ownership: Ownership | null }>({ open: false, ownership: null });
   const owners = useOwners(id);
+  const [listing, setListing] = useState(false);
 
   // ?rate=1 opens the rating sheet once, then is removed from the URL.
   useEffect(() => {
@@ -117,6 +119,7 @@ export function Watch() {
 
       <div role="group" aria-label="More actions" className="grid grid-flow-col auto-cols-fr divide-x divide-line border border-line">
         <ActionButton onClick={() => setOwning({ open: true, ownership: null })}>I own this</ActionButton>
+        <ActionButton onClick={() => setListing(true)}>Add to list</ActionButton>
       </div>
 
       <section aria-labelledby="specs-title">
@@ -212,6 +215,7 @@ export function Watch() {
         ownership={owning.ownership}
         title={<WatchName w={w} />}
       />
+      <AddToListSheet open={listing} onClose={() => setListing(false)} watchId={w.watch_id} title={<WatchName w={w} />} />
       <PersonEntries
         watchId={w.watch_id}
         person={person}

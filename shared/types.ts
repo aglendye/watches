@@ -83,20 +83,27 @@ export interface DiaryEntry extends RatingEntry {
 }
 
 export interface FeedItem {
-  kind: 'rating' | 'watch';
+  kind: 'rating' | 'watch' | 'list' | 'photo';
   id: string;
   created_at: string;
   user_id: string;
   display_name: string;
-  watch_id: string;
-  brand_name: string;
-  model_name: string;
+  /** Null for list items; every other kind is about a watch. */
+  watch_id: string | null;
+  brand_name: string | null;
+  model_name: string | null;
   reference: string | null;
   case_material?: string | null;
   dial_color?: string | null;
   extras?: Record<string, unknown> | null;
   score: number | null;
   snippet: string | null;
+  /** 'list' items: the list. */
+  list_id: string | null;
+  list_name: string | null;
+  /** 'photo' items: the new photo. */
+  image_url?: string | null;
+  primary_image_url?: string | null;
 }
 
 export interface Page<T> {
@@ -149,4 +156,36 @@ export interface OwnershipInput {
   acquiredOn: string;
   soldOn: string;
   notes: string;
+}
+
+export interface ListSummary {
+  id: string;
+  user_id: string;
+  display_name: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+  is_mine: boolean;
+  item_count: number;
+  /** Up to three of the most recently added watches, for the thumbnails. */
+  preview: WatchArtFields[];
+}
+
+export interface ListItem extends WatchArtFields {
+  watch_id: string;
+  note: string | null;
+  added_at: string;
+}
+
+export interface ListDetail extends Omit<ListSummary, 'item_count' | 'preview'> {
+  items: ListItem[];
+}
+
+/** One of my lists, for the add-to-list sheet. */
+export interface MyListForWatch {
+  id: string;
+  name: string;
+  item_count: number;
+  contains: boolean;
 }

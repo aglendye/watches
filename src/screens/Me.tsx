@@ -46,6 +46,7 @@ export function Me() {
       <h1 className="display text-[2.75rem]">Me</h1>
       <nav aria-label="Your things" className="border-t border-line">
         <NavRow to="/collection" label="My Collection" />
+        <NavRow to="/lists" label="Lists" />
       </nav>
       <Card className="p-4">
         <form onSubmit={save} noValidate className="space-y-3">

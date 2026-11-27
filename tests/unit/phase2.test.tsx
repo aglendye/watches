@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { OwnershipSheet, validateOwnership } from '../../src/components/OwnershipSheet';
 import { ToastProvider } from '../../src/components/Toast';
+import { AddToListSheet, validateList } from '../../src/components/ListSheets';
 
 export function wrap(ui: React.ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -68,5 +69,57 @@ describe('ownership sheet', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Mark as sold today' }));
     expect((screen.getByLabelText('Sold') as HTMLInputElement).value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument();
+  });
+});
+
+describe('add-to-list sheet', () => {
+  it('validates list names', () => {
+    expect(validateList('  ', '')).toMatch(/name/);
+    expect(validateList('x'.repeat(81), '')).toMatch(/80/);
+    expect(validateList('Grails', 'x'.repeat(501))).toMatch(/500/);
+    expect(validateList('Grails', '')).toBeNull();
+  });
+
+  it('lists my lists with checkmarks and toggles membership', async () => {
+    let lists = [
+      { id: 'l1', name: 'Grails', item_count: 2, contains: true },
+      { id: 'l2', name: 'Wishlist', item_count: 0, contains: false },
+    ];
+    const fetchMock = mockApi((action, params) => {
+      if (action === 'lists.forWatch') return lists;
+      if (action === 'listItems.add') {
+        lists = lists.map((l) => (l.id === params.listId ? { ...l, contains: true, item_count: l.item_count + 1 } : l));
+        return { ok: true };
+      }
+      if (action === 'listItems.remove') return { ok: true };
+      return null;
+    });
+    wrap(<AddToListSheet open onClose={() => {}} watchId="w1" title="Rolex Submariner" />);
+    const grails = await screen.findByRole('checkbox', { name: /Grails/ });
+    const wish = screen.getByRole('checkbox', { name: /Wishlist/ });
+    expect(grails).toHaveAttribute('aria-checked', 'true');
+    expect(wish).toHaveAttribute('aria-checked', 'false');
+    await userEvent.click(wish);
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: /Wishlist/ })).toHaveAttribute('aria-checked', 'true'));
+    const add = fetchMock.mock.calls.map((c) => JSON.parse(String(c[1].body))).find((b) => b.action === 'listItems.add');
+    expect(add.params).toEqual({ listId: 'l2', watchId: 'w1' });
+    await userEvent.click(screen.getByRole('checkbox', { name: /Grails/ }));
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some((c) => JSON.parse(String(c[1].body)).action === 'listItems.remove')).toBe(true),
+    );
+  });
+
+  it('creates a new list containing the watch', async () => {
+    const fetchMock = mockApi((action) => (action === 'lists.forWatch' ? [] : { id: 'l9' }));
+    wrap(<AddToListSheet open onClose={() => {}} watchId="w1" title="Rolex Submariner" />);
+    expect(await screen.findByText(/don’t have any lists/)).toBeInTheDocument();
+    const create = screen.getByRole('button', { name: 'Create and add' });
+    expect(create).toBeDisabled();
+    await userEvent.type(screen.getByLabelText('New list'), 'Grails');
+    await userEvent.click(create);
+    await waitFor(() => {
+      const body = fetchMock.mock.calls.map((c) => JSON.parse(String(c[1].body))).find((b) => b.action === 'lists.create');
+      expect(body?.params).toEqual({ name: 'Grails', description: '', watchId: 'w1' });
+    });
   });
 });
