@@ -86,6 +86,13 @@ html {
   }
 }
 
+/* Nothing may make the page wider than the screen: iPhone would zoom the
+   whole page out to fit it. Horizontal strips scroll inside themselves. */
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   margin: 0;
   min-height: 100dvh;

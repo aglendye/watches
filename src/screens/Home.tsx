@@ -37,7 +37,7 @@ export function Home() {
         ) : recent.isError ? (
           <ErrorState message={errorMessage(recent.error)} onRetry={() => void recent.refetch()} />
         ) : (
-          <ul className="scrollbar-none -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1">
+          <ul className="scrollbar-none relative -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1">
             {recent.data.map((w) => (
               <li key={w.watch_id} className="flex">
                 <WatchCard w={w} />

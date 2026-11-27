@@ -36,7 +36,7 @@ export function WatchCard({ w }: { w: CatalogWatch }) {
   return (
     <Link
       to={`/watch/${w.watch_id}`}
-      className="flex w-40 shrink-0 snap-start flex-col gap-2 overflow-hidden rounded-card border border-line bg-surface p-3"
+      className="relative flex w-40 shrink-0 snap-start flex-col gap-2 overflow-hidden rounded-card border border-line bg-surface p-3"
     >
       <div className="hero -mx-3 -mt-3 grid place-items-center rounded-t-card py-2">
         <WatchImage watch={w} photoUrl={w.primary_image_url} className="size-24 rounded-lg" />
