@@ -2,6 +2,12 @@
 
 Running log for the maintainer. Newest phase at the top. "Spec" means the AI Agent Build Specification; "PRD" means the Product Requirements Document.
 
+## Upright photo uploads (Nov 27)
+
+- iPhones store most portrait photos as sideways pixels plus an EXIF "rotate 90°" tag. The upload step decoded photos with `createImageBitmap(file, { imageOrientation: 'from-image' })` first, but Safari ignores that option for files (WebKit bug 237895), so the shrunk JPEG kept the sideways pixels and lost the tag: portraits uploaded sideways.
+- `src/lib/photo.ts` now decodes through an `<img>` first (Safari, Chrome and Firefox all draw it upright and report the upright size), with `createImageBitmap` only as a fallback. Checked in Chrome with a 4032×3024 photo tagged "rotate 90°": it uploads as 1200×1600 portrait with no EXIF left. Still to confirm on a real iPhone.
+- Photos uploaded before the fix stay as they are; the uploader can delete and re-add them.
+
 ## Rolex scrape and nickname backfill (Adam, Nov 27)
 
 Two phases, both live. Adam chose: Rolex only, one entry per reference (not per dial version).

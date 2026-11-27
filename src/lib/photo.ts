@@ -21,15 +21,18 @@ export interface CompressedPhoto {
   height: number;
 }
 
-async function decode(file: Blob): Promise<{ source: CanvasImageSource; width: number; height: number; close(): void }> {
-  if (typeof createImageBitmap === 'function') {
-    try {
-      const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
-      return { source: bmp, width: bmp.width, height: bmp.height, close: () => bmp.close() };
-    } catch {
-      // fall through to <img>, which Safari uses for HEIC
-    }
-  }
+type Decoded = { source: CanvasImageSource; width: number; height: number; close(): void };
+
+/**
+ * Decodes the photo upright. Phones often store portrait photos as sideways
+ * pixels plus an EXIF "rotate 90°" tag. An <img> applies that tag (its
+ * natural size is the upright size, and drawImage draws it upright) in
+ * Safari, Chrome and Firefox. createImageBitmap does not in Safari: it ignores
+ * imageOrientation for Blobs (WebKit bug 237895), which uploaded iPhone
+ * portraits sideways. So <img> comes first; createImageBitmap is only a
+ * fallback for files an <img> can't open.
+ */
+async function decode(file: Blob): Promise<Decoded> {
   const url = URL.createObjectURL(file);
   try {
     const img = new Image();
@@ -39,8 +42,16 @@ async function decode(file: Blob): Promise<{ source: CanvasImageSource; width: n
     return { source: img, width: img.naturalWidth, height: img.naturalHeight, close: () => URL.revokeObjectURL(url) };
   } catch {
     URL.revokeObjectURL(url);
-    throw new Error('That file isn’t a photo this phone can open.');
   }
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+      return { source: bmp, width: bmp.width, height: bmp.height, close: () => bmp.close() };
+    } catch {
+      // fall through
+    }
+  }
+  throw new Error('That file isn’t a photo this phone can open.');
 }
 
 export async function compressImage(file: Blob): Promise<CompressedPhoto> {
