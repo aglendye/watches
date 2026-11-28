@@ -1,6 +1,6 @@
 // Watch photos: the upload sheet (pick, shrink, preview, upload with progress)
 // and the gallery strip on the watch page.
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ReactNode, type SyntheticEvent } from 'react';
 import type { WatchPhoto } from '../../shared/types';
 import { errorMessage } from '../lib/api';
 import { relativeTime } from '../lib/format';
@@ -211,5 +211,34 @@ export function PhotoGallery({
         onCancel={() => setDeleting(null)}
       />
     </section>
+  );
+}
+
+/**
+ * The watch-page hero when the watch has a photo. Landscape photos fill the usual
+ * wide 16 rem panel. Portrait photos get a taller 4:5 frame so the watch isn't cut
+ * down to a strip; on wide screens the frame is capped at 70% of the screen height
+ * (it narrows rather than crops) and a blurred copy of the photo fills the sides.
+ * The shape comes from the stored size, or from the image itself once it loads.
+ */
+export function PhotoHero({ url, alt, width, height }: { url: string; alt: string; width?: number | null; height?: number | null }) {
+  const [loaded, setLoaded] = useState<{ url: string; w: number; h: number } | null>(null);
+  const size = width && height ? { w: width, h: height } : loaded?.url === url ? loaded : null;
+  const portrait = !!size && size.h > size.w;
+  const onLoad = (e: SyntheticEvent<HTMLImageElement>) =>
+    setLoaded({ url, w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight });
+
+  if (!portrait) {
+    return (
+      <div className="hero relative grid h-64 place-items-center overflow-hidden border border-line">
+        <img src={url} alt={alt} className="block h-full w-full object-cover" decoding="async" onLoad={onLoad} />
+      </div>
+    );
+  }
+  return (
+    <div className="hero relative grid place-items-center overflow-hidden border border-line">
+      <img src={url} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-50 blur-2xl" />
+      <img src={url} alt={alt} className="relative block aspect-[4/5] w-[min(100%,56svh)] object-cover" decoding="async" />
+    </div>
   );
 }

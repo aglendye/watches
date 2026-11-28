@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import type { CommunityRating, Ownership, RatingEntry, WatchDetail, WatchOwner } from '../../shared/types';
-import { WatchArt, WatchImage } from '../components/WatchArt';
+import { WatchArt } from '../components/WatchArt';
 import { AddToListSheet } from '../components/ListSheets';
 import { OwnershipSheet } from '../components/OwnershipSheet';
-import { PhotoGallery, PhotoPicker, type PhotoPickerHandle } from '../components/Photos';
+import { PhotoGallery, PhotoHero, PhotoPicker, type PhotoPickerHandle } from '../components/Photos';
 import { RatingSheet } from '../components/RatingSheet';
 import { WatchName } from '../components/WatchItems';
 import { Sheet } from '../components/Sheet';
@@ -76,6 +76,7 @@ export function Watch() {
   // The hero shows the photo picked in the gallery, else the primary (oldest) photo, else the drawing.
   const shown = photos.data?.find((p) => p.id === shownPhotoId) ?? null;
   const heroUrl = shown?.url ?? w.primary_image_url ?? null;
+  const heroPhoto = shown ?? photos.data?.find((p) => p.url === heroUrl) ?? null;
 
   return (
     <article className="space-y-5">
@@ -87,16 +88,14 @@ export function Watch() {
           </Link>
         </div>
         {/* The uploaded photo when there is one (Phase 2), otherwise a drawing from the watch's data */}
-        <div className="hero relative grid h-64 place-items-center overflow-hidden border border-line">
-          {heroUrl ? (
-            <WatchImage watch={w} photoUrl={heroUrl} className="h-full w-full" />
-          ) : (
-            <>
-              <WatchArt watch={w} className="h-[84%] w-auto" />
-              <p className="label absolute bottom-2.5 left-3 !text-[0.625rem]">Drawn from specs</p>
-            </>
-          )}
-        </div>
+        {heroUrl ? (
+          <PhotoHero url={heroUrl} alt={`${w.brand_name} ${w.model_name}`} width={heroPhoto?.width} height={heroPhoto?.height} />
+        ) : (
+          <div className="hero relative grid h-64 place-items-center overflow-hidden border border-line">
+            <WatchArt watch={w} className="h-[84%] w-auto" />
+            <p className="label absolute bottom-2.5 left-3 !text-[0.625rem]">Drawn from specs</p>
+          </div>
+        )}
         <div>
           <p className="label">{w.brand_name}</p>
           <h1 className="display mt-1 text-[2.5rem]">{w.model_name}</h1>

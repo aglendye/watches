@@ -2,6 +2,13 @@
 
 Running log for the maintainer. Newest phase at the top. "Spec" means the AI Agent Build Specification; "PRD" means the Product Requirements Document.
 
+## Portrait photo hero (Adam, Nov 28)
+
+- Portrait photos were cropped to a thin strip by the wide 16 rem hero. Adam picked the adaptive hero (option 2 of: blurred backdrop, adaptive height, crop on upload, one fixed shape).
+- `PhotoHero` (`src/components/Photos.tsx`): landscape photos keep the 16 rem panel. Portrait photos get a 4:5 frame, capped at 70% of the screen height by narrowing (never cropping further), with a blurred copy of the photo filling the sides on wide screens. On a phone the 4:5 frame is ~58% of the screen and trims ~3% off the top and bottom of a 3:4 photo.
+- The shape comes from the stored `width`/`height`, or from the image once it loads.
+- Trial: Adam is testing on his phone. If it takes too much of the screen, the fallback is a square frame or a lower cap (one class in `PhotoHero`), or reverting to the blurred backdrop.
+
 ## Upright photo uploads (Nov 27)
 
 - iPhones store most portrait photos as sideways pixels plus an EXIF "rotate 90°" tag. The upload step decoded photos with `createImageBitmap(file, { imageOrientation: 'from-image' })` first, but Safari ignores that option for files (WebKit bug 237895), so the shrunk JPEG kept the sideways pixels and lost the tag: portraits uploaded sideways.
