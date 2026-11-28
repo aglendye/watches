@@ -7,6 +7,7 @@ Running log for the maintainer. Newest phase at the top. "Spec" means the AI Age
 - Portrait photos were cropped to a thin strip by the wide 16 rem hero. Adam picked the adaptive hero (option 2 of: blurred backdrop, adaptive height, crop on upload, one fixed shape).
 - `PhotoHero` (`src/components/Photos.tsx`): landscape photos keep the 16 rem panel. Portrait photos get a 4:5 frame, capped at 70% of the screen height by narrowing (never cropping further), with a blurred copy of the photo filling the sides on wide screens. On a phone the 4:5 frame is ~58% of the screen and trims ~3% off the top and bottom of a 3:4 photo.
 - The shape comes from the stored `width`/`height`, or from the image once it loads.
+- Adam tested it: better, but too tall. The cap is now **48% of the screen height** (frame width `min(100%, 38.4svh)`, which is 48 × 4/5). On a phone the cap now applies too: the frame narrows a little and the blurred fill shows at the sides.
 - Trial: Adam is testing on his phone. If it takes too much of the screen, the fallback is a square frame or a lower cap (one class in `PhotoHero`), or reverting to the blurred backdrop.
 
 ## Upright photo uploads (Nov 27)

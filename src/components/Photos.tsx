@@ -217,7 +217,7 @@ export function PhotoGallery({
 /**
  * The watch-page hero when the watch has a photo. Landscape photos fill the usual
  * wide 16 rem panel. Portrait photos get a taller 4:5 frame so the watch isn't cut
- * down to a strip; on wide screens the frame is capped at 70% of the screen height
+ * down to a strip; the frame is capped at 48% of the screen height
  * (it narrows rather than crops) and a blurred copy of the photo fills the sides.
  * The shape comes from the stored size, or from the image itself once it loads.
  */
@@ -238,7 +238,7 @@ export function PhotoHero({ url, alt, width, height }: { url: string; alt: strin
   return (
     <div className="hero relative grid place-items-center overflow-hidden border border-line">
       <img src={url} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-50 blur-2xl" />
-      <img src={url} alt={alt} className="relative block aspect-[4/5] w-[min(100%,56svh)] object-cover" decoding="async" />
+      <img src={url} alt={alt} className="relative block aspect-[4/5] w-[min(100%,38.4svh)] object-cover" decoding="async" />
     </div>
   );
 }
